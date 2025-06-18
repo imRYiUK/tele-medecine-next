@@ -1,0 +1,18 @@
+export const getRoleBasedRedirect = (role: string): string => {
+  switch (role) {
+    case 'SUPER_ADMIN':
+      return '/super-admin';
+    case 'ADMIN':
+      return '/admin';
+    case 'MEDECIN':
+      return '/medecin';
+    case 'RECEPTIONNISTE':
+      return '/receptionniste';
+    case 'RADIOLOGUE':
+      return '/radiologue';
+    case 'TECHNICIEN':
+      return '/technicien';
+    default:
+      return '/dashboard';
+  }
+}; 
