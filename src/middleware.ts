@@ -5,7 +5,7 @@ import { getRoleBasedRedirect } from '@/lib/utils/role-redirect';
 // Définir les routes protégées et leurs rôles autorisés
 const protectedRoutes = {
   '/super-admin': ['SUPER_ADMIN'],
-  '/admin': ['ADMIN'],
+  '/admin': ['ADMINISTRATEUR'],
   '/medecin': ['MEDECIN'],
   '/receptionniste': ['RECEPTIONNISTE'],
   '/radiologue': ['RADIOLOGUE'],

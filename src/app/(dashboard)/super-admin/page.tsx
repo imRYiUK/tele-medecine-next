@@ -109,7 +109,7 @@ export default function SuperAdminDashboard() {
               <div key={activity.id} className="flex items-center justify-between border-b pb-4 last:border-b-0">
                 <div className="space-y-1">
                   <p className="text-base font-semibold text-gray-800">
-                    {activity.utilisateur.prenom} {activity.utilisateur.nom}
+                    {activity.utilisateur.prenom} {activity.utilisateur.nom} - {activity.utilisateur.role}
                   </p>
                   <p className="text-sm text-gray-600">
                     {activity.description}

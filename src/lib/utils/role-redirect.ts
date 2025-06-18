@@ -2,7 +2,7 @@ export const getRoleBasedRedirect = (role: string): string => {
   switch (role) {
     case 'SUPER_ADMIN':
       return '/super-admin';
-    case 'ADMIN':
+    case 'ADMINISTRATEUR':
       return '/admin';
     case 'MEDECIN':
       return '/medecin';

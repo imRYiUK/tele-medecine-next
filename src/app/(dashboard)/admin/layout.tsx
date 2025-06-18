@@ -2,11 +2,11 @@
 
 import { RoleGuard } from "@/components/auth/RoleGuard";
 import { useAuth } from "@/lib/hooks/useAuth";
-import { 
-  Users, 
-  Building2, 
-  Settings, 
-  LogOut, 
+import {
+  Users,
+  Building2,
+  Settings,
+  LogOut,
   Menu,
   X,
   Activity,
@@ -17,14 +17,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const navigation = [
-  { name: "Dashboard", href: "/super-admin", icon: Activity },
-  { name: "Utilisateurs", href: "/super-admin/users", icon: Users },
-  { name: "Établissements", href: "/super-admin/establishments", icon: Building2 },
-  { name: "Journal d'activité", href: "/super-admin/journal", icon: BookOpen },
-  { name: "Paramètres", href: "/super-admin/settings", icon: Settings },
+  { name: "Dashboard", href: "/admin", icon: Activity },
+  { name: "Utilisateurs", href: "/admin/users", icon: Users },
+  { name: "Journal d'activité", href: "/admin/journal", icon: BookOpen },
+  { name: "Paramètres", href: "/admin/settings", icon: Settings },
 ];
 
-export default function SuperAdminLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -34,7 +33,7 @@ export default function SuperAdminLayout({
   const pathname = usePathname();
 
   return (
-    <RoleGuard allowedRoles={["SUPER_ADMIN"]}>
+    <RoleGuard allowedRoles={["ADMINISTRATEUR"]}>
       <div className="min-h-screen bg-gray-50">
         {/* Mobile sidebar */}
         <div
@@ -45,7 +44,7 @@ export default function SuperAdminLayout({
           <div className="fixed inset-0 bg-gray-600 bg-opacity-75" onClick={() => setSidebarOpen(false)} />
           <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
             <div className="flex h-16 items-center justify-between px-4">
-              <span className="text-xl font-semibold text-emerald-600">Super Admin</span>
+              <span className="text-xl font-semibold text-emerald-600">Admin</span>
               <button onClick={() => setSidebarOpen(false)}>
                 <X className="h-6 w-6 text-gray-500" />
               </button>
@@ -89,7 +88,7 @@ export default function SuperAdminLayout({
         <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
           <div className="flex min-h-0 flex-1 flex-col border-r border-gray-200 bg-white">
             <div className="flex h-16 items-center px-4">
-              <span className="text-xl font-semibold text-emerald-600">Super Admin</span>
+              <span className="text-xl font-semibold text-emerald-600">Admin</span>
             </div>
             <nav className="flex-1 space-y-1 px-2 py-4">
               {navigation.map((item) => {

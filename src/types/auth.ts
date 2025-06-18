@@ -5,7 +5,7 @@ export interface User {
   username: string;
   email: string;
   telephone: string;
-  role: 'SUPER_ADMIN' | 'ADMIN' | 'DOCTOR' | 'NURSE' | 'PATIENT';
+  role: 'SUPER_ADMIN' | 'ADMINISTRATEUR' | 'MEDECIN' | 'RADIOLOGUE' | 'RECEPTIONNISTE' | 'TECHNICIEN';
   etablissementID: string;
   estActif: boolean;
 }

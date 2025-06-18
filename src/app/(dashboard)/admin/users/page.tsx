@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { usersService, User } from "@/lib/services/users.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,13 +8,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
-import { UserFormDialog } from "./UserFormDialog";
-import { UserEditDialog } from "./UserEditDialog";
-import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
+import { useAuth } from "@/lib/hooks/useAuth";
+import { AdminUserFormDialog } from "./AdminUserFormDialog";
+import { AdminUserEditDialog } from "./AdminUserEditDialog";
 
 const roles = [
   { label: "Tous", value: "all" },
-  { label: "Super Admin", value: "SUPER_ADMIN" },
   { label: "Admin", value: "ADMINISTRATEUR" },
   { label: "Médecin", value: "MEDECIN" },
   { label: "Réceptionniste", value: "RECEPTIONNISTE" },
@@ -22,28 +21,42 @@ const roles = [
   { label: "Technicien", value: "TECHNICIEN" },
 ];
 
-export default function UsersPage() {
+export default function AdminUsersPage() {
+  const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [toggleLoading, setToggleLoading] = useState<string | null>(null);
-  // Pagination (simple, à améliorer si besoin)
   const [page, setPage] = useState(1);
   const pageSize = 10;
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [user?.etablissementID]);
 
   async function fetchUsers() {
     setLoading(true);
     try {
       const data = await usersService.getAll();
-      setUsers(data);
+      // Filtrer côté frontend si le backend ne filtre pas déjà
+      const filtered = data
+        .filter(u => u.etablissement?.etablissementID === user?.etablissementID)
+        .filter(u => u.utilisateurID !== user?.utilisateurID);
+      setUsers(filtered);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleToggleActive(userRow: User) {
+    setToggleLoading(userRow.utilisateurID);
+    try {
+      await usersService.update(userRow.utilisateurID, { estActif: !userRow.estActif });
+      await fetchUsers();
+    } finally {
+      setToggleLoading(null);
     }
   }
 
@@ -65,21 +78,11 @@ export default function UsersPage() {
   const paginatedUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
   const totalPages = Math.ceil(filteredUsers.length / pageSize);
 
-  async function handleToggleActive(user: User) {
-    setToggleLoading(user.utilisateurID);
-    try {
-      await usersService.update(user.utilisateurID, { estActif: !user.estActif });
-      await fetchUsers();
-    } finally {
-      setToggleLoading(null);
-    }
-  }
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h2 className="text-2xl font-bold">Gestion des utilisateurs</h2>
-        <UserFormDialog onUserCreated={fetchUsers} />
+        <AdminUserFormDialog onUserCreated={fetchUsers} />
       </div>
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <Input
@@ -119,7 +122,6 @@ export default function UsersPage() {
               <TableHead>Username</TableHead>
               <TableHead>Téléphone</TableHead>
               <TableHead>Rôle</TableHead>
-              <TableHead>Établissement</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Actions</TableHead>
             </TableRow>
@@ -127,46 +129,40 @@ export default function UsersPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8">
+                <TableCell colSpan={8} className="text-center py-8">
                   <Loader2 className="mx-auto animate-spin" />
                 </TableCell>
               </TableRow>
             ) : paginatedUsers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={8} className="text-center py-8 text-gray-500">
                   Aucun utilisateur trouvé.
                 </TableCell>
               </TableRow>
             ) : (
-              paginatedUsers.map((user) => (
-                <TableRow key={user.utilisateurID}>
-                  <TableCell>{user.nom}</TableCell>
-                  <TableCell>{user.prenom}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.telephone}</TableCell>
-                  <TableCell>{user.role}</TableCell>
-                  <TableCell>{user.etablissement?.nom || "-"}</TableCell>
+              paginatedUsers.map((userRow) => (
+                <TableRow key={userRow.utilisateurID}>
+                  <TableCell>{userRow.nom}</TableCell>
+                  <TableCell>{userRow.prenom}</TableCell>
+                  <TableCell>{userRow.email}</TableCell>
+                  <TableCell>{userRow.username}</TableCell>
+                  <TableCell>{userRow.telephone}</TableCell>
+                  <TableCell>{userRow.role}</TableCell>
                   <TableCell>
                     <Switch
-                      checked={user.estActif}
-                      disabled={toggleLoading === user.utilisateurID}
-                      onCheckedChange={() => handleToggleActive(user)}
-                      aria-label={user.estActif ? "Désactiver" : "Activer"}
+                      checked={userRow.estActif}
+                      disabled={toggleLoading === userRow.utilisateurID}
+                      onCheckedChange={() => handleToggleActive(userRow)}
+                      aria-label={userRow.estActif ? "Désactiver" : "Activer"}
                     />
-                    {toggleLoading === user.utilisateurID && <Loader2 className="w-4 h-4 ml-2 animate-spin inline" />}
+                    {toggleLoading === userRow.utilisateurID && <Loader2 className="w-4 h-4 ml-2 animate-spin inline" />}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <UserEditDialog user={user} onUserUpdated={fetchUsers} />
-                      <ConfirmDeleteDialog
-                        onConfirm={async () => {
-                          await usersService.remove(user.utilisateurID);
-                          await fetchUsers();
-                        }}
-                        title={`Supprimer l'utilisateur ?`}
-                        description={`Cette action supprimera définitivement l'utilisateur "${user.nom} ${user.prenom}".`}
-                      />
+                      <AdminUserEditDialog userToEdit={userRow} onUserUpdated={fetchUsers} />
+                      <Button size="icon" variant="destructive">
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>

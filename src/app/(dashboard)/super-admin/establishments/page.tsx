@@ -12,6 +12,8 @@ import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { EtablissementFormDialog } from "./EtablissementFormDialog";
+import { EtablissementEditDialog } from "./EtablissementEditDialog";
+import { ConfirmDeleteDialog } from "./ConfirmDeleteDialog";
 
 const types = [
   { label: "Tous", value: "all" },
@@ -164,8 +166,15 @@ export default function EstablishmentsPage() {
                   <TableCell>{format(new Date(e.createdAt), 'P', { locale: fr })}</TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button size="icon" variant="ghost"><Pencil className="w-4 h-4" /></Button>
-                      <Button size="icon" variant="destructive"><Trash2 className="w-4 h-4" /></Button>
+                      <EtablissementEditDialog etab={e} onUpdated={fetchEtabs} />
+                      <ConfirmDeleteDialog
+                        onConfirm={async () => {
+                          await etablissementsService.remove(e.etablissementID);
+                          await fetchEtabs();
+                        }}
+                        title={`Supprimer l'établissement ?`}
+                        description={`Cette action supprimera définitivement l'établissement "${e.nom}".`}
+                      />
                     </div>
                   </TableCell>
                 </TableRow>
