@@ -58,4 +58,8 @@ export const usersService = {
   async remove(id: string): Promise<void> {
     await api.delete(`/users/${id}`);
   },
+  async getMedecinsByEtablissement(etablissementID: string): Promise<User[]> {
+    const res = await api.get(`/users/medecins/etablissement/${etablissementID}`);
+    return res.data;
+  },
 }; 
