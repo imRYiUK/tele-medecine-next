@@ -1,13 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { usersService, CreateUserDto } from "@/lib/services/users.service";
+import { usersService, UpdateUserDto, User } from "@/lib/services/users.service";
 import { etablissementsService, Etablissement } from "@/lib/services/etablissements.service";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pencil } from "lucide-react";
 import { EtablissementCombobox } from "./EtablissementCombobox";
 
 const roles = [
@@ -19,19 +19,18 @@ const roles = [
   { label: "Technicien", value: "TECHNICIEN" },
 ];
 
-export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void }) {
+export function UserEditDialog({ user, onUserUpdated }: { user: User; onUserUpdated: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState<CreateUserDto>({
-    nom: "",
-    prenom: "",
-    email: "",
-    username: "",
-    telephone: "",
-    role: "MEDECIN",
-    password: "",
-    etablissementID: undefined,
+  const [form, setForm] = useState<UpdateUserDto>({
+    nom: user.nom,
+    prenom: user.prenom,
+    email: user.email,
+    username: user.username,
+    telephone: user.telephone,
+    role: user.role,
+    etablissementID: user.etablissement?.etablissementID,
   });
   const [etabs, setEtabs] = useState<Etablissement[]>([]);
   const [etabsLoading, setEtabsLoading] = useState(false);
@@ -58,21 +57,11 @@ export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void })
     setLoading(true);
     setError(null);
     try {
-      await usersService.create(form);
+      await usersService.update(user.utilisateurID, form);
       setOpen(false);
-      setForm({
-        nom: "",
-        prenom: "",
-        email: "",
-        username: "",
-        telephone: "",
-        role: "MEDECIN",
-        password: "",
-        etablissementID: undefined,
-      });
-      onUserCreated();
+      onUserUpdated();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur lors de la création");
+      setError(err?.response?.data?.message || "Erreur lors de la modification");
     } finally {
       setLoading(false);
     }
@@ -80,14 +69,12 @@ export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void })
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="gap-2">
-          Ajouter un utilisateur
-        </Button>
-      </DialogTrigger>
+      <Button size="icon" variant="ghost" onClick={() => setOpen(true)}>
+        <Pencil className="w-4 h-4" />
+      </Button>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Ajouter un utilisateur</DialogTitle>
+          <DialogTitle>Modifier l'utilisateur</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex gap-2">
@@ -107,7 +94,6 @@ export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void })
               ))}
             </SelectContent>
           </Select>
-          <Input name="password" placeholder="Mot de passe" type="password" value={form.password} onChange={handleChange} required minLength={6} />
           <EtablissementCombobox value={form.etablissementID} onChange={handleEtabChange} disabled={loading} />
           {error && <div className="text-red-600 text-sm">{error}</div>}
           <DialogFooter>
@@ -115,7 +101,7 @@ export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void })
               <Button type="button" variant="outline" disabled={loading}>Annuler</Button>
             </DialogClose>
             <Button type="submit" disabled={loading}>
-              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Créer
+              {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}Enregistrer
             </Button>
           </DialogFooter>
         </form>

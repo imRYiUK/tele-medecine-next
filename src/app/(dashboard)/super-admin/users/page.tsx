@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { usersService, User } from "@/lib/services/users.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Switch } from "@/components/ui/switch";
 import { Loader2, Plus, Pencil, Trash2 } from "lucide-react";
 import { UserFormDialog } from "./UserFormDialog";
+import { UserEditDialog } from "./UserEditDialog";
 
 const roles = [
   { label: "Tous", value: "all" },
@@ -26,6 +27,7 @@ export default function UsersPage() {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [toggleLoading, setToggleLoading] = useState<string | null>(null);
   // Pagination (simple, à améliorer si besoin)
   const [page, setPage] = useState(1);
   const pageSize = 10;
@@ -61,6 +63,16 @@ export default function UsersPage() {
   // Pagination
   const paginatedUsers = filteredUsers.slice((page - 1) * pageSize, page * pageSize);
   const totalPages = Math.ceil(filteredUsers.length / pageSize);
+
+  async function handleToggleActive(user: User) {
+    setToggleLoading(user.utilisateurID);
+    try {
+      await usersService.update(user.utilisateurID, { estActif: !user.estActif });
+      await fetchUsers();
+    } finally {
+      setToggleLoading(null);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -137,15 +149,15 @@ export default function UsersPage() {
                   <TableCell>
                     <Switch
                       checked={user.estActif}
-                      onCheckedChange={() => { /* toggle activation */ }}
+                      disabled={toggleLoading === user.utilisateurID}
+                      onCheckedChange={() => handleToggleActive(user)}
                       aria-label={user.estActif ? "Désactiver" : "Activer"}
                     />
+                    {toggleLoading === user.utilisateurID && <Loader2 className="w-4 h-4 ml-2 animate-spin inline" />}
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button size="icon" variant="ghost" onClick={() => { /* ouvrir modal édition */ }}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
+                      <UserEditDialog user={user} onUserUpdated={fetchUsers} />
                       <Button size="icon" variant="destructive" onClick={() => { /* ouvrir modal suppression */ }}>
                         <Trash2 className="w-4 h-4" />
                       </Button>
