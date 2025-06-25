@@ -21,19 +21,51 @@ import { Check } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { patientsService, Patient } from "@/lib/services/patients.service";
+import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
+import { parse } from 'date-fns';
+import { startOfWeek } from 'date-fns';
+import { getDay } from 'date-fns';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { format as formatDate } from 'date-fns';
+import withDragAndDrop from 'react-big-calendar/lib/addons/dragAndDrop';
+import 'react-big-calendar/lib/addons/dragAndDrop/styles.css';
 
 interface RendezVous extends RendezVousApi {
   date?: string;
   heure?: string;
+  debutTime?: string;
+  endTime?: string;
 }
 
-function RendezVousForm({ patientID, onCreated }: { patientID?: string, onCreated: () => void }) {
+type CalendarEvent = {
+  title: string;
+  start: Date;
+  end: Date;
+  allDay: boolean;
+  resource: RendezVous;
+};
+
+function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeure }: { patientID?: string, onCreated: () => void, initialDateHeure?: string, initialEndHeure?: string }) {
   const { user } = useAuth();
   const router = useRouter();
+  let initialDate = "";
+  let initialDebutTime = "";
+  let initialEndTime = "";
+  if (initialDateHeure) {
+    const [datePart, timePart] = initialDateHeure.split('T');
+    initialDate = datePart;
+    initialDebutTime = timePart || "";
+  }
+  if (initialEndHeure) {
+    const [, timePart] = initialEndHeure.split('T');
+    initialEndTime = timePart || "";
+  }
   const [form, setForm] = useState({
     patientID: patientID || "",
     medecinID: "",
-    dateHeure: "",
+    date: initialDate,
+    debutTime: initialDebutTime,
+    endTime: initialEndTime,
     motif: "",
   });
   const [loading, setLoading] = useState(false);
@@ -48,6 +80,18 @@ function RendezVousForm({ patientID, onCreated }: { patientID?: string, onCreate
   useEffect(() => {
     setForm((prev) => ({ ...prev, patientID: patientID || "" }));
   }, [patientID]);
+
+  useEffect(() => {
+    if (initialDateHeure) {
+      const [datePart, timePart] = initialDateHeure.split('T');
+      let newState: any = { date: datePart, debutTime: timePart || "" };
+      if (initialEndHeure) {
+        const [, endTimePart] = initialEndHeure.split('T');
+        newState.endTime = endTimePart || "";
+      }
+      setForm((prev) => ({ ...prev, ...newState }));
+    }
+  }, [initialDateHeure, initialEndHeure]);
 
   useEffect(() => {
     // Utilise user.etablissementID directement (champ existant dans User)
@@ -75,7 +119,9 @@ function RendezVousForm({ patientID, onCreated }: { patientID?: string, onCreate
       await rendezVousService.create({
         patientID: form.patientID,
         medecinID: form.medecinID,
-        dateHeure: form.dateHeure,
+        date: form.date,
+        debutTime: form.debutTime,
+        endTime: form.endTime,
         motif: form.motif,
       });
       toast.success("Rendez-vous créé avec succès");
@@ -205,9 +251,19 @@ function RendezVousForm({ patientID, onCreated }: { patientID?: string, onCreate
           </div>
           <input type="hidden" name="medecinID" value={form.medecinID} required />
         </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Date et heure</label>
-          <Input name="dateHeure" type="datetime-local" value={form.dateHeure} onChange={handleChange} required />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div>
+            <label className="block text-sm font-medium mb-1">Date</label>
+            <Input name="date" type="date" value={form.date} onChange={handleChange} required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Heure de début</label>
+            <Input name="debutTime" type="time" value={form.debutTime} onChange={handleChange} required />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Heure de fin</label>
+            <Input name="endTime" type="time" value={form.endTime} onChange={handleChange} required />
+          </div>
         </div>
       </div>
       <div>
@@ -224,6 +280,20 @@ function RendezVousForm({ patientID, onCreated }: { patientID?: string, onCreate
   );
 }
 
+const locales = {
+  'fr': fr,
+};
+
+const localizer = dateFnsLocalizer({
+  format,
+  parse,
+  startOfWeek: () => startOfWeek(new Date(), { locale: fr }),
+  getDay,
+  locales,
+});
+
+const DnDCalendar = withDragAndDrop<CalendarEvent, object>(Calendar);
+
 export default function ReceptionnisteRendezVousPage() {
   const [rdvs, setRdvs] = useState<RendezVous[]>([]);
   const [loading, setLoading] = useState(true);
@@ -232,6 +302,9 @@ export default function ReceptionnisteRendezVousPage() {
   const patientID = searchParams.get("patientID") || undefined;
   const [showForm, setShowForm] = useState(!!patientID);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedSlot, setSelectedSlot] = useState<{ start: Date, end: Date } | null>(null);
+  const [calendarView, setCalendarView] = useState<View>("week");
+  const [calendarDate, setCalendarDate] = useState<Date>(new Date());
 
   useEffect(() => {
     fetchRdvs();
@@ -240,6 +313,7 @@ export default function ReceptionnisteRendezVousPage() {
   function handleCreated() {
     fetchRdvs();
     setDialogOpen(false);
+    setSelectedSlot(null);
   }
 
   async function fetchRdvs() {
@@ -257,27 +331,82 @@ export default function ReceptionnisteRendezVousPage() {
     return searchStr.includes(search.toLowerCase());
   });
 
+  // Map rdvs to calendar events
+  const events: CalendarEvent[] = filteredRdvs.map((rdv) => {
+    const start = rdv.date && rdv.debutTime ? new Date(`${rdv.date}T${rdv.debutTime}`) : new Date();
+    const end = rdv.date && rdv.endTime ? new Date(`${rdv.date}T${rdv.endTime}`) : new Date(start.getTime() + 30 * 60 * 1000);
+    return {
+      title: `${rdv.patient?.prenom || ''} ${rdv.patient?.nom || ''} avec Dr. ${rdv.medecin?.prenom || ''} ${rdv.medecin?.nom || ''} - ${rdv.motif}`,
+      start,
+      end,
+      allDay: false,
+      resource: rdv,
+    };
+  });
+
+  async function handleEventResize({ event, start, end }: { event: CalendarEvent, start: Date | string, end: Date | string }) {
+    // Ensure start and end are Date objects
+    const startDate = typeof start === 'string' ? new Date(start) : start;
+    const endDate = typeof end === 'string' ? new Date(end) : end;
+    // Update the event in the backend
+    // Extract date, debutTime, endTime from new start/end
+    const date = startDate.toISOString().slice(0, 10);
+    const debutTime = startDate.toTimeString().slice(0, 5);
+    const endTime = endDate.toTimeString().slice(0, 5);
+    try {
+      await rendezVousService.update(event.resource.rendezVousID, {
+        date,
+        debutTime,
+        endTime,
+      });
+      toast.success('Rendez-vous mis à jour');
+      fetchRdvs();
+    } catch (err) {
+      toast.error('Erreur lors de la mise à jour du rendez-vous');
+    }
+  }
+
+  async function handleEventDrop({ event, start, end }: { event: CalendarEvent, start: Date | string, end: Date | string }) {
+    const startDate = typeof start === 'string' ? new Date(start) : start;
+    const endDate = typeof end === 'string' ? new Date(end) : end;
+    const date = startDate.toISOString().slice(0, 10);
+    const debutTime = startDate.toTimeString().slice(0, 5);
+    const endTime = endDate.toTimeString().slice(0, 5);
+    try {
+      await rendezVousService.update(event.resource.rendezVousID, {
+        date,
+        debutTime,
+        endTime,
+      });
+      toast.success('Rendez-vous déplacé');
+      fetchRdvs();
+    } catch (err) {
+      toast.error('Erreur lors du déplacement du rendez-vous');
+    }
+  }
+
   return (
     <div className="space-y-6">
       {!patientID && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mb-2">Créer un rendez-vous</Button>
-          </DialogTrigger>
+          {/*<DialogTrigger asChild>*/}
+          {/*  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mb-2">Créer un rendez-vous</Button>*/}
+          {/*</DialogTrigger>*/}
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Créer un rendez-vous</DialogTitle>
             </DialogHeader>
-            <RendezVousForm onCreated={handleCreated} />
+            <RendezVousForm
+              onCreated={handleCreated}
+              initialDateHeure={selectedSlot ? formatDate(selectedSlot.start, "yyyy-MM-dd'T'HH:mm") : undefined}
+              initialEndHeure={selectedSlot && selectedSlot.end ? formatDate(selectedSlot.end, "yyyy-MM-dd'T'HH:mm") : undefined}
+            />
           </DialogContent>
         </Dialog>
       )}
       {patientID && <RendezVousForm patientID={patientID} onCreated={handleCreated} />}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h2 className="text-2xl font-bold">Rendez-vous</h2>
-        <Button variant="outline" onClick={fetchRdvs} disabled={loading}>
-          Rafraîchir
-        </Button>
       </div>
       <div className="flex flex-col md:flex-row gap-4 items-center">
         <Input
@@ -288,47 +417,54 @@ export default function ReceptionnisteRendezVousPage() {
         />
       </div>
       <div className="overflow-x-auto rounded-lg border bg-white shadow">
-        <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
-            <TableRow>
-              <TableHead>Patient</TableHead>
-              <TableHead>Médecin</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Motif</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-8">
-                  <Loader2 className="mx-auto animate-spin" />
-                </TableCell>
-              </TableRow>
-            ) : filteredRdvs.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-gray-500">
-                  Aucun rendez-vous trouvé.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredRdvs.map((rdv) => (
-                <TableRow key={rdv.rendezVousID} className="hover:bg-gray-50 transition">
-                  <TableCell>{rdv.patient?.prenom} {rdv.patient?.nom}</TableCell>
-                  <TableCell>{rdv.medecin?.prenom} {rdv.medecin?.nom}</TableCell>
-                  <TableCell>
-                    {rdv.date && rdv.heure
-                      ? format(new Date(`${rdv.date}T${rdv.heure}`), 'Pp', { locale: fr })
-                      : rdv.date
-                        ? format(new Date(rdv.date), 'P', { locale: fr })
-                        : '—'
-                    }
-                  </TableCell>
-                  <TableCell>{rdv.motif}</TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        {/* Calendar replaces the table */}
+        <div style={{ height: 600 }}>
+          <DnDCalendar
+            localizer={localizer}
+            events={events}
+            startAccessor="start"
+            endAccessor="end"
+            titleAccessor="title"
+            style={{ height: 600 }}
+            messages={{
+              next: 'Suivant',
+              previous: 'Précédent',
+              today: "Aujourd'hui",
+              month: 'Mois',
+              week: 'Semaine',
+              day: 'Jour',
+              agenda: 'Agenda',
+              date: 'Date',
+              time: 'Heure',
+              event: 'Rendez-vous',
+              noEventsInRange: 'Aucun rendez-vous dans cette période.',
+            }}
+            culture="fr"
+            selectable
+            onSelectSlot={(slotInfo) => {
+              // Check for overlap with existing events
+              const hasOverlap = events.some(event => {
+                // event.start < slotInfo.end && event.end > slotInfo.start
+                return event.start < slotInfo.end && event.end > slotInfo.start;
+              });
+              if (hasOverlap) {
+                toast.error("Un rendez-vous existe déjà sur ce créneau.");
+                return;
+              }
+              setSelectedSlot({ start: slotInfo.start, end: slotInfo.end });
+              setDialogOpen(true);
+            }}
+            view={calendarView}
+            onView={setCalendarView}
+            date={calendarDate}
+            onNavigate={setCalendarDate}
+            min={new Date(1970, 1, 1, 8, 0)}
+            max={new Date(1970, 1, 1, 21, 0)}
+            resizable
+            onEventResize={handleEventResize}
+            onEventDrop={handleEventDrop}
+          />
+        </div>
       </div>
     </div>
   );

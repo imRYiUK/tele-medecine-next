@@ -20,7 +20,9 @@ export interface RendezVous {
 export interface CreateRendezVousDto {
   patientID: string;
   medecinID: string;
-  dateHeure: string;
+  date: string;
+  debutTime: string;
+  endTime: string;
   motif: string;
 }
 
@@ -31,6 +33,10 @@ export const rendezVousService = {
   },
   async create(data: CreateRendezVousDto): Promise<RendezVous> {
     const res = await api.post('/rendez-vous', data);
+    return res.data;
+  },
+  async update(id: string, data: Partial<{ date: string; debutTime: string; endTime: string; motif: string; medecinID: string }>): Promise<RendezVous> {
+    const res = await api.put(`/rendez-vous/${id}`, data);
     return res.data;
   },
   // Ajouter d'autres méthodes si besoin (getById, update, remove)
