@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { rendezVousService, RendezVous as RendezVousApi } from "@/lib/services/rendez-vous.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -406,9 +405,9 @@ export default function ReceptionnisteRendezVousPage() {
       )}
       {patientID && <RendezVousForm patientID={patientID} onCreated={handleCreated} />}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <h2 className="text-2xl font-bold">Rendez-vous</h2>
+        <h2 className="text-3xl font-bold text-emerald-700 tracking-tight">Rendez-vous</h2>
       </div>
-      <div className="flex flex-col md:flex-row gap-4 items-center">
+      <div className="flex flex-col md:flex-row gap-4 items-center mb-2">
         <Input
           placeholder="Rechercher par patient ou médecin..."
           value={search}
@@ -417,7 +416,6 @@ export default function ReceptionnisteRendezVousPage() {
         />
       </div>
       <div className="overflow-x-auto rounded-lg border bg-white shadow">
-        {/* Calendar replaces the table */}
         <div style={{ height: 600 }}>
           <DnDCalendar
             localizer={localizer}
@@ -463,6 +461,18 @@ export default function ReceptionnisteRendezVousPage() {
             resizable
             onEventResize={handleEventResize}
             onEventDrop={handleEventDrop}
+            eventPropGetter={() => ({
+              style: {
+                backgroundColor: '#059669',
+                borderRadius: 8,
+                color: 'white',
+                border: 'none',
+                fontWeight: 500,
+                fontSize: 15,
+                paddingLeft: 8,
+                paddingRight: 8,
+              },
+            })}
           />
         </div>
       </div>
