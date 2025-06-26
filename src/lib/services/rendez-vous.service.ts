@@ -39,5 +39,9 @@ export const rendezVousService = {
     const res = await api.put(`/rendez-vous/${id}`, data);
     return res.data;
   },
+  async getByMedecin(medecinID: string): Promise<RendezVous[]> {
+    const res = await api.get(`/rendez-vous/medecin/${medecinID}`);
+    return res.data;
+  },
   // Ajouter d'autres méthodes si besoin (getById, update, remove)
 }; 

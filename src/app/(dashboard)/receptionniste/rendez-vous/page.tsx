@@ -9,15 +9,7 @@ import { fr } from "date-fns/locale";
 import { useSearchParams, useRouter } from "next/navigation";
 import { usersService, User } from "@/lib/services/users.service";
 import { useAuth } from "@/lib/hooks/useAuth";
-import {
-  Command,
-  CommandInput,
-  CommandList,
-  CommandEmpty,
-  CommandItem,
-} from "@/components/ui/command";
-import { Check } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogClose, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import { patientsService, Patient } from "@/lib/services/patients.service";
 import { Calendar, dateFnsLocalizer, View } from 'react-big-calendar';
@@ -103,7 +95,14 @@ function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeur
   }, [user?.etablissementID]);
 
   useEffect(() => {
-    patientsService.getAll().then(setPatients);
+    patientsService.getAll()
+      .then(setPatients)
+      .catch(error => {
+        console.error('Erreur lors du fetch des patients:', error);
+        console.error('Status:', error.response?.status);
+        console.error('Message:', error.response?.data);
+        setPatients([]);
+      });
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
