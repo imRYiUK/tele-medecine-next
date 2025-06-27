@@ -72,10 +72,17 @@ export default function RadiologueDicom() {
   const fetchSeries = async (studyId: string) => {
     try {
       const response = await api.get(`/dicom/studies/${studyId}/series`);
-      // Ensure we have an array, fallback to empty array if not
-      const seriesData = Array.isArray(response.data) ? response.data : 
-                        (response.data?.data && Array.isArray(response.data.data)) ? response.data.data : [];
-      setSeries(seriesData);
+      // Handle the actual backend response structure
+      const seriesData = response.data?.data || [];
+      const mappedSeries = seriesData.map((serie: any) => ({
+        id: serie.ID,
+        seriesInstanceUID: serie.MainDicomTags?.SeriesInstanceUID || '',
+        seriesNumber: serie.MainDicomTags?.SeriesNumber || '',
+        seriesDescription: serie.MainDicomTags?.SeriesDescription || '',
+        modality: serie.MainDicomTags?.Modality || '',
+        numberOfInstances: serie.Instances?.length || 0,
+      }));
+      setSeries(mappedSeries);
     } catch (error) {
       console.error('Error fetching series:', error);
       setSeries([]); // Set empty array on error
@@ -83,9 +90,8 @@ export default function RadiologueDicom() {
   };
 
   const handleStudySelect = (study: DicomStudy) => {
-    // alert(study)
     setSelectedStudy(study);
-    fetchSeries(study.id);
+    fetchSeries(study);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -258,9 +264,9 @@ export default function RadiologueDicom() {
               </div>
             ) : (
               <div className="space-y-3 max-h-96 overflow-y-auto">
-                {(Array.isArray(series) ? series : []).map((serie) => (
+                {(Array.isArray(series) ? series : []).map((serie, index) => (
                   <div
-                    key={serie.id}
+                    key={serie.id || `series-${index}`}
                     className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-start justify-between">
