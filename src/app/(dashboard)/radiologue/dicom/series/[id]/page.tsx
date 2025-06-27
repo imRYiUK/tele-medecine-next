@@ -5,57 +5,65 @@ import { useParams, useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { 
-  ArrowLeft,
-  Eye,
-  Download,
-  FileText,
-  Image as ImageIcon,
-  Calendar,
-  User,
-  Database,
-  Play,
-  Pause,
+  ArrowLeft, 
+  Search, 
+  Eye, 
+  Download, 
+  Grid3X3,
+  List,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Maximize,
+  Settings,
+  Info
 } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import DicomViewer from "@/components/DicomViewer";
 
 interface DicomInstance {
-  id: string;
-  sopInstanceUID: string;
-  instanceNumber: string;
-  imageType: string;
-  url: string;
-  thumbnailUrl?: string;
+  ID: string;
+  MainDicomTags?: {
+    InstanceNumber?: string;
+    SOPInstanceUID?: string;
+    ImageComments?: string;
+    ImageType?: string;
+    AcquisitionDate?: string;
+    AcquisitionTime?: string;
+  };
+  ParentSeries?: string;
+  ParentStudy?: string;
 }
 
 interface DicomSeries {
-  id: string;
-  seriesInstanceUID: string;
-  seriesNumber: string;
-  seriesDescription: string;
-  modality: string;
-  numberOfInstances: number;
-  studyInstanceUID: string;
-  studyDescription?: string;
-  patientName?: string;
-  patientID?: string;
-  studyDate?: string;
+  ID: string;
+  MainDicomTags?: {
+    SeriesInstanceUID?: string;
+    SeriesNumber?: string;
+    SeriesDescription?: string;
+    Modality?: string;
+    SeriesDate?: string;
+    SeriesTime?: string;
+  };
+  Instances?: string[];
+  ParentStudy?: string;
 }
 
-export default function SeriesDetail() {
+export default function SeriesDetailPage() {
   const params = useParams();
   const router = useRouter();
   const seriesId = params.id as string;
   
   const [series, setSeries] = useState<DicomSeries | null>(null);
   const [instances, setInstances] = useState<DicomInstance[]>([]);
-  const [loading, setLoading] = useState(true);
   const [selectedInstance, setSelectedInstance] = useState<DicomInstance | null>(null);
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [currentInstanceIndex, setCurrentInstanceIndex] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (seriesId) {
@@ -67,25 +75,41 @@ export default function SeriesDetail() {
   const fetchSeriesDetails = async () => {
     try {
       const response = await api.get(`/dicom/series/${seriesId}`);
-      setSeries(response.data);
+      const seriesData = response.data?.data || response.data;
+      setSeries(seriesData);
     } catch (error) {
       console.error('Error fetching series details:', error);
+      setError('Failed to load series details');
     }
   };
 
   const fetchInstances = async () => {
     try {
+      setLoading(true);
       const response = await api.get(`/dicom/series/${seriesId}/instances`);
-      const instancesData = Array.isArray(response.data) ? response.data : 
-                           (response.data?.data && Array.isArray(response.data.data)) ? response.data.data : [];
-      setInstances(instancesData);
-      if (instancesData.length > 0) {
-        setSelectedInstance(instancesData[0]);
-        setCurrentImageIndex(0);
+      const instancesData = response.data?.data || response.data || [];
+      
+      // Map the instances to our interface
+      const mappedInstances = instancesData.map((instance: any) => ({
+        ID: instance.ID,
+        MainDicomTags: instance.MainDicomTags || {},
+      }));
+
+      // Sort by instance number
+      mappedInstances.sort((a: DicomInstance, b: DicomInstance) => 
+        parseInt(a.MainDicomTags?.InstanceNumber || '0') - parseInt(b.MainDicomTags?.InstanceNumber || '0')
+      );
+
+      setInstances(mappedInstances);
+      
+      // Set the first instance as selected
+      if (mappedInstances.length > 0) {
+        setSelectedInstance(mappedInstances[0]);
+        setCurrentInstanceIndex(0);
       }
     } catch (error) {
       console.error('Error fetching instances:', error);
-      setInstances([]);
+      setError('Failed to load instances');
     } finally {
       setLoading(false);
     }
@@ -93,28 +117,48 @@ export default function SeriesDetail() {
 
   const handleInstanceSelect = (instance: DicomInstance, index: number) => {
     setSelectedInstance(instance);
-    setCurrentImageIndex(index);
+    setCurrentInstanceIndex(index);
   };
 
-  const nextImage = () => {
-    if (currentImageIndex < instances.length - 1) {
-      const nextIndex = currentImageIndex + 1;
-      setCurrentImageIndex(nextIndex);
-      setSelectedInstance(instances[nextIndex]);
+  const handlePreviousInstance = () => {
+    if (currentInstanceIndex > 0) {
+      const newIndex = currentInstanceIndex - 1;
+      setCurrentInstanceIndex(newIndex);
+      setSelectedInstance(instances[newIndex]);
     }
   };
 
-  const previousImage = () => {
-    if (currentImageIndex > 0) {
-      const prevIndex = currentImageIndex - 1;
-      setCurrentImageIndex(prevIndex);
-      setSelectedInstance(instances[prevIndex]);
+  const handleNextInstance = () => {
+    if (currentInstanceIndex < instances.length - 1) {
+      const newIndex = currentInstanceIndex + 1;
+      setCurrentInstanceIndex(newIndex);
+      setSelectedInstance(instances[newIndex]);
     }
   };
 
-  const togglePlay = () => {
-    setIsPlaying(!isPlaying);
+  const handleDownloadInstance = async (instanceId: string) => {
+    try {
+      const response = await api.get(`/dicom/instances/${instanceId}/file`, {
+        responseType: 'blob',
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `dicom-instance-${instanceId}.dcm`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading instance:', error);
+    }
   };
+
+  const filteredInstances = instances.filter(instance =>
+    instance.MainDicomTags?.InstanceNumber?.includes(searchTerm) ||
+    (instance.MainDicomTags?.ImageComments || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -132,190 +176,255 @@ export default function SeriesDetail() {
     );
   }
 
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center space-x-4">
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Button>
+        </div>
+        <Card>
+          <CardContent className="flex items-center justify-center h-64">
+            <div className="text-center">
+              <p className="text-red-600 mb-2">Erreur lors du chargement</p>
+              <p className="text-sm text-gray-500">{error}</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Link href="/radiologue/dicom">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour
-            </Button>
-          </Link>
+          <Button variant="outline" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Retour
+          </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">
-              Série {series?.seriesNumber} - {series?.seriesDescription || 'Sans description'}
+              Série {series?.MainDicomTags?.SeriesNumber} - {series?.MainDicomTags?.SeriesDescription || 'Sans description'}
             </h1>
-            <p className="text-gray-600">Visualisation des images DICOM</p>
+            <p className="text-gray-600">
+              {instances.length} images • {series?.MainDicomTags?.Modality}
+            </p>
           </div>
         </div>
+        
         <div className="flex items-center space-x-2">
-          <Badge variant="outline">{series?.modality}</Badge>
-          <Badge variant="secondary">{instances.length} images</Badge>
+          <Button
+            variant={viewMode === 'grid' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('grid')}
+          >
+            <Grid3X3 className="h-4 w-4" />
+          </Button>
+          <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setViewMode('list')}
+          >
+            <List className="h-4 w-4" />
+          </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Image Viewer */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <span>Visualiseur d'image</span>
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={previousImage}
-                    disabled={currentImageIndex === 0}
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <span className="text-sm text-gray-600">
-                    {currentImageIndex + 1} / {instances.length}
-                  </span>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={nextImage}
-                    disabled={currentImageIndex === instances.length - 1}
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={togglePlay}
-                  >
-                    {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {selectedInstance ? (
-                <div className="space-y-4">
-                  <div className="bg-gray-100 rounded-lg p-4 flex items-center justify-center min-h-96">
-                    <img
-                      src={selectedInstance.url}
-                      alt={`Image ${selectedInstance.instanceNumber}`}
-                      className="max-w-full max-h-96 object-contain"
-                      onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.src = '/placeholder-image.png';
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center justify-between text-sm text-gray-600">
-                    <span>Instance {selectedInstance.instanceNumber}</span>
-                    <span>SOP Instance UID: {selectedInstance.sopInstanceUID}</span>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-center py-12 text-gray-500">
-                  <ImageIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <p>Aucune image sélectionnée</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Series Info and Instance List */}
-        <div className="space-y-6">
-          {/* Series Information */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Informations de la série</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
+      {/* Series Info */}
+      {series && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Info className="mr-2 h-5 w-5" />
+              Informations de la série
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">Numéro de série</label>
-                <p className="text-sm text-gray-900">{series?.seriesNumber}</p>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-500">Description</label>
-                <p className="text-sm text-gray-900">{series?.seriesDescription || 'N/A'}</p>
+                <p className="text-sm text-gray-900">{series.MainDicomTags?.SeriesNumber}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Modalité</label>
-                <p className="text-sm text-gray-900">{series?.modality}</p>
+                <p className="text-sm text-gray-900">{series.MainDicomTags?.Modality}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Nombre d'images</label>
-                <p className="text-sm text-gray-900">{series?.numberOfInstances}</p>
+                <p className="text-sm text-gray-900">{series.Instances?.length || 0}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Description</label>
+                <p className="text-sm text-gray-900">{series.MainDicomTags?.SeriesDescription || 'N/A'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-500">Date de série</label>
+                <p className="text-sm text-gray-900">
+                  {formatDate(series.MainDicomTags?.SeriesDate || '')}
+                </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">UID de série</label>
-                <p className="text-sm text-gray-900 font-mono text-xs break-all">{series?.seriesInstanceUID}</p>
+                <p className="text-sm text-gray-900 font-mono text-xs">{series.MainDicomTags?.SeriesInstanceUID}</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-          {/* Study Information */}
-          {series?.patientName && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Informations de l'étude</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Patient</label>
-                  <p className="text-sm text-gray-900">{series.patientName}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">ID Patient</label>
-                  <p className="text-sm text-gray-900">{series.patientID}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Date d'étude</label>
-                  <p className="text-sm text-gray-900">{formatDate(series.studyDate || '')}</p>
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-500">Description de l'étude</label>
-                  <p className="text-sm text-gray-900">{series.studyDescription || 'N/A'}</p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+      {/* Search */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Search className="mr-2 h-5 w-5" />
+            Rechercher des images
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="relative">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <Input
+              placeholder="Rechercher par numéro d'image ou commentaires..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+        </CardContent>
+      </Card>
 
-          {/* Instance List */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Images de la série</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                {(Array.isArray(instances) ? instances : []).map((instance, index) => (
-                  <div
-                    key={instance.id}
-                    className={`border rounded-lg p-3 cursor-pointer transition-colors ${
-                      selectedInstance?.id === instance.id
-                        ? 'border-blue-500 bg-blue-50'
-                        : 'hover:bg-gray-50'
-                    }`}
-                    onClick={() => handleInstanceSelect(instance, index)}
-                  >
-                    <div className="flex items-center space-x-3">
-                      <div className="w-12 h-12 bg-gray-100 rounded flex items-center justify-center">
-                        <FileText className="h-6 w-6 text-gray-400" />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Instances List */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>
+              Images ({filteredInstances.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+              {filteredInstances.map((instance, index) => (
+                <div
+                  key={instance.ID}
+                  className={`border rounded-lg p-3 cursor-pointer transition-colors ${
+                    selectedInstance?.ID === instance.ID
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'hover:bg-gray-50'
+                  }`}
+                  onClick={() => handleInstanceSelect(instance, index)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="outline">#{instance.MainDicomTags?.InstanceNumber}</Badge>
+                        {instance.MainDicomTags?.ImageComments && (
+                          <span className="text-xs text-gray-500 truncate">
+                            {instance.MainDicomTags.ImageComments}
+                          </span>
+                        )}
                       </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-900">
-                          Instance {instance.instanceNumber}
+                      {instance.MainDicomTags?.AcquisitionDate && (
+                        <p className="text-xs text-gray-400 mt-1">
+                          {formatDate(instance.MainDicomTags.AcquisitionDate)}
                         </p>
-                        <p className="text-xs text-gray-500">
-                          {instance.imageType}
-                        </p>
-                      </div>
+                      )}
                     </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadInstance(instance.ID);
+                      }}
+                    >
+                      <Download className="h-4 w-4" />
+                    </Button>
                   </div>
-                ))}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* DICOM Viewer */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span>
+                Image {selectedInstance?.MainDicomTags?.InstanceNumber} 
+                {selectedInstance && (
+                  <span className="text-sm text-gray-500 ml-2">
+                    ({currentInstanceIndex + 1} sur {instances.length})
+                  </span>
+                )}
+              </span>
+              <div className="flex items-center space-x-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handlePreviousInstance}
+                  disabled={currentInstanceIndex === 0}
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleNextInstance}
+                  disabled={currentInstanceIndex === instances.length - 1}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-        </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {selectedInstance ? (
+              <div className="space-y-4">
+                <DicomViewer
+                  imageUrl={`dicom/instances/${selectedInstance.ID}/preview?quality=90`}
+                  instanceId={selectedInstance.ID}
+                  onError={(error) => console.error('DICOM viewer error:', error)}
+                />
+                
+                {/* Instance Details */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <label className="text-gray-500">Numéro d'image</label>
+                    <p className="font-medium">{selectedInstance.MainDicomTags?.InstanceNumber}</p>
+                  </div>
+                  <div>
+                    <label className="text-gray-500">UID SOP</label>
+                    <p className="font-mono text-xs truncate">{selectedInstance.MainDicomTags?.SOPInstanceUID}</p>
+                  </div>
+                  {selectedInstance.MainDicomTags?.AcquisitionDate && (
+                    <div>
+                      <label className="text-gray-500">Date d'acquisition</label>
+                      <p>{formatDate(selectedInstance.MainDicomTags.AcquisitionDate)}</p>
+                    </div>
+                  )}
+                  {selectedInstance.MainDicomTags?.ImageType && (
+                    <div>
+                      <label className="text-gray-500">Type d'image</label>
+                      <p className="text-xs">{selectedInstance.MainDicomTags.ImageType}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-64 text-gray-500">
+                <div className="text-center">
+                  <Eye className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                  <p>Sélectionnez une image pour la visualiser</p>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

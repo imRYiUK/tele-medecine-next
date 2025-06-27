@@ -4,20 +4,22 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 interface SliderProps {
-  value: number[]
-  onValueChange: (value: number[]) => void
-  max?: number
-  min?: number
-  step?: number
-  className?: string
+  value: number[];
+  onValueChange: (value: number[]) => void;
+  max?: number;
+  min?: number;
+  step?: number;
+  className?: string;
 }
 
 const Slider = React.forwardRef<HTMLDivElement, SliderProps>(
   ({ value, onValueChange, max = 100, min = 0, step = 1, className }, ref) => {
     const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-      const newValue = parseFloat(event.target.value)
-      onValueChange([newValue])
-    }
+      const newValue = parseFloat(event.target.value);
+      onValueChange([newValue]);
+    };
+
+    const percentage = ((value[0] - min) / (max - min)) * 100;
 
     return (
       <div
@@ -36,7 +38,7 @@ const Slider = React.forwardRef<HTMLDivElement, SliderProps>(
           onChange={handleChange}
           className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
           style={{
-            background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${((value[0] - min) / (max - min)) * 100}%, #e5e7eb ${((value[0] - min) / (max - min)) * 100}%, #e5e7eb 100%)`
+            background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${percentage}%, #e5e7eb ${percentage}%, #e5e7eb 100%)`
           }}
         />
         <style jsx>{`
@@ -61,10 +63,10 @@ const Slider = React.forwardRef<HTMLDivElement, SliderProps>(
           }
         `}</style>
       </div>
-    )
+    );
   }
-)
+);
 
-Slider.displayName = "Slider"
+Slider.displayName = "Slider";
 
 export { Slider } 

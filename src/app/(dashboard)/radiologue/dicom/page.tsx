@@ -21,24 +21,29 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 
 interface DicomStudy {
-  id: string;
-  studyInstanceUID: string;
-  patientName: string;
-  patientID: string;
-  studyDate: string;
-  studyDescription: string;
-  modality: string;
-  numberOfSeries: number;
-  numberOfInstances: number;
+  ID: string;
+  MainDicomTags?: {
+    PatientName?: string;
+    PatientID?: string;
+    StudyDate?: string;
+    StudyDescription?: string;
+    ModalitiesInStudy?: string;
+    StudyInstanceUID?: string;
+  };
+  Series?: string[];
+  Instances?: string[];
 }
 
 interface DicomSeries {
-  id: string;
-  seriesInstanceUID: string;
-  seriesNumber: string;
-  seriesDescription: string;
-  modality: string;
-  numberOfInstances: number;
+  ID: string;
+  MainDicomTags?: {
+    SeriesInstanceUID?: string;
+    SeriesNumber?: string;
+    SeriesDescription?: string;
+    Modality?: string;
+  };
+  Instances?: string[];
+  ParentStudy?: string;
 }
 
 export default function RadiologueDicom() {
@@ -57,10 +62,31 @@ export default function RadiologueDicom() {
     try {
       setLoading(true);
       const response = await api.get('/dicom/studies');
-      // Ensure we have an array, fallback to empty array if not
-      const studiesData = Array.isArray(response.data) ? response.data : 
-                         (response.data?.data && Array.isArray(response.data.data)) ? response.data.data : [];
-      setStudies(studiesData);
+      
+      // Handle the case where we get an array of study IDs
+      const studiesData = response.data?.data || [];
+      
+      if (Array.isArray(studiesData) && studiesData.length > 0 && typeof studiesData[0] === 'string') {
+        // We have an array of study IDs, fetch details for each
+        const studyDetails = await Promise.all(
+          studiesData.map(async (studyId: string) => {
+            try {
+              const studyResponse = await api.get(`/dicom/studies/${studyId}`);
+              return studyResponse.data?.data || studyResponse.data;
+            } catch (error) {
+              console.error(`Error fetching study ${studyId}:`, error);
+              return null;
+            }
+          })
+        );
+        
+        // Filter out any failed requests
+        const validStudies = studyDetails.filter(study => study !== null);
+        setStudies(validStudies);
+      } else {
+        // Direct array of study objects
+        setStudies(studiesData);
+      }
     } catch (error) {
       console.error('Error fetching DICOM studies:', error);
       setStudies([]); // Set empty array on error
@@ -74,15 +100,7 @@ export default function RadiologueDicom() {
       const response = await api.get(`/dicom/studies/${studyId}/series`);
       // Handle the actual backend response structure
       const seriesData = response.data?.data || [];
-      const mappedSeries = seriesData.map((serie: any) => ({
-        id: serie.ID,
-        seriesInstanceUID: serie.MainDicomTags?.SeriesInstanceUID || '',
-        seriesNumber: serie.MainDicomTags?.SeriesNumber || '',
-        seriesDescription: serie.MainDicomTags?.SeriesDescription || '',
-        modality: serie.MainDicomTags?.Modality || '',
-        numberOfInstances: serie.Instances?.length || 0,
-      }));
-      setSeries(mappedSeries);
+      setSeries(seriesData);
     } catch (error) {
       console.error('Error fetching series:', error);
       setSeries([]); // Set empty array on error
@@ -91,7 +109,7 @@ export default function RadiologueDicom() {
 
   const handleStudySelect = (study: DicomStudy) => {
     setSelectedStudy(study);
-    fetchSeries(study);
+    fetchSeries(study.ID);
   };
 
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -132,9 +150,9 @@ export default function RadiologueDicom() {
 
   // Ensure studies is always an array before filtering
   const filteredStudies = (Array.isArray(studies) ? studies : []).filter(study =>
-    (study.patientName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (study.studyDescription?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-    (study.patientID?.toLowerCase() || '').includes(searchTerm.toLowerCase())
+    (study.MainDicomTags?.PatientName?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (study.MainDicomTags?.StudyDescription?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+    (study.MainDicomTags?.PatientID?.toLowerCase() || '').includes(searchTerm.toLowerCase())
   );
 
   if (loading) {
@@ -205,9 +223,9 @@ export default function RadiologueDicom() {
             <div className="space-y-3 max-h-96 overflow-y-auto">
               {filteredStudies.map((study) => (
                 <div
-                  key={study.id}
+                  key={study.ID}
                   className={`border rounded-lg p-4 cursor-pointer transition-colors ${
-                    selectedStudy?.id === study.id
+                    selectedStudy?.ID === study.ID
                       ? 'border-blue-500 bg-blue-50'
                       : 'hover:bg-gray-50'
                   }`}
@@ -218,27 +236,27 @@ export default function RadiologueDicom() {
                       <div className="flex items-center space-x-2 mb-2">
                         <Database className="h-5 w-5 text-blue-600" />
                         <h3 className="font-medium text-gray-900">
-                          {study.studyDescription || 'Étude sans description'}
+                          {study.MainDicomTags?.StudyDescription || 'Étude sans description'}
                         </h3>
-                        <Badge variant="outline">{study.modality}</Badge>
+                        <Badge variant="outline">{study.MainDicomTags?.ModalitiesInStudy}</Badge>
                       </div>
                       
                       <div className="grid grid-cols-2 gap-2 text-sm text-gray-600">
                         <div className="flex items-center space-x-1">
                           <User className="h-3 w-3" />
-                          <span>{study.patientName}</span>
+                          <span>{study.MainDicomTags?.PatientName}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <Calendar className="h-3 w-3" />
-                          <span>{formatDate(study.studyDate)}</span>
+                          <span>{formatDate(study.MainDicomTags?.StudyDate || '')}</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <FileText className="h-3 w-3" />
-                          <span>{study.numberOfSeries} séries</span>
+                          <span>{study.Series?.length || 0} séries</span>
                         </div>
                         <div className="flex items-center space-x-1">
                           <ImageIcon className="h-3 w-3" />
-                          <span>{study.numberOfInstances} images</span>
+                          <span>{study.Instances?.length || 0} images</span>
                         </div>
                       </div>
                     </div>
@@ -253,7 +271,7 @@ export default function RadiologueDicom() {
         <Card>
           <CardHeader>
             <CardTitle>
-              Séries {selectedStudy ? `- ${selectedStudy.studyDescription}` : ''}
+              Séries {selectedStudy ? `- ${selectedStudy.MainDicomTags?.StudyDescription}` : ''}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -266,7 +284,7 @@ export default function RadiologueDicom() {
               <div className="space-y-3 max-h-96 overflow-y-auto">
                 {(Array.isArray(series) ? series : []).map((serie, index) => (
                   <div
-                    key={serie.id || `series-${index}`}
+                    key={serie.ID || `series-${index}`}
                     className="border rounded-lg p-4 hover:bg-gray-50 transition-colors"
                   >
                     <div className="flex items-start justify-between">
@@ -274,29 +292,29 @@ export default function RadiologueDicom() {
                         <div className="flex items-center space-x-2 mb-2">
                           <FileText className="h-5 w-5 text-green-600" />
                           <h3 className="font-medium text-gray-900">
-                            Série {serie.seriesNumber}
+                            Série {serie.MainDicomTags?.SeriesNumber}
                           </h3>
-                          <Badge variant="outline">{serie.modality}</Badge>
+                          <Badge variant="outline">{serie.MainDicomTags?.Modality}</Badge>
                         </div>
                         
                         <p className="text-sm text-gray-600 mb-2">
-                          {serie.seriesDescription || 'Série sans description'}
+                          {serie.MainDicomTags?.SeriesDescription || 'Série sans description'}
                         </p>
                         
                         <div className="flex items-center space-x-2 text-sm text-gray-600">
                           <ImageIcon className="h-3 w-3" />
-                          <span>{serie.numberOfInstances} images</span>
+                          <span>{serie.Instances?.length || 0} images</span>
                         </div>
                       </div>
                       
                       <div className="flex items-center space-x-2">
-                        <Link href={`/radiologue/dicom/series/${serie.id}`}>
+                        <Link href={`/radiologue/dicom/series/${serie.ID}`}>
                           <Button variant="outline" size="sm">
                             <Eye className="mr-2 h-4 w-4" />
                             Voir
                           </Button>
                         </Link>
-                        <Link href={`/radiologue/dicom/series/${serie.id}/download`}>
+                        <Link href={`/radiologue/dicom/series/${serie.ID}/download`}>
                           <Button variant="ghost" size="sm">
                             <Download className="h-4 w-4" />
                           </Button>
@@ -321,27 +339,27 @@ export default function RadiologueDicom() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">Patient</label>
-                <p className="text-sm text-gray-900">{selectedStudy.patientName}</p>
+                <p className="text-sm text-gray-900">{selectedStudy.MainDicomTags?.PatientName}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">ID Patient</label>
-                <p className="text-sm text-gray-900">{selectedStudy.patientID}</p>
+                <p className="text-sm text-gray-900">{selectedStudy.MainDicomTags?.PatientID}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Date d'étude</label>
-                <p className="text-sm text-gray-900">{formatDate(selectedStudy.studyDate)}</p>
+                <p className="text-sm text-gray-900">{formatDate(selectedStudy.MainDicomTags?.StudyDate || '')}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Description</label>
-                <p className="text-sm text-gray-900">{selectedStudy.studyDescription || 'N/A'}</p>
+                <p className="text-sm text-gray-900">{selectedStudy.MainDicomTags?.StudyDescription || 'N/A'}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">Modalité</label>
-                <p className="text-sm text-gray-900">{selectedStudy.modality}</p>
+                <p className="text-sm text-gray-900">{selectedStudy.MainDicomTags?.ModalitiesInStudy}</p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-500">UID d'étude</label>
-                <p className="text-sm text-gray-900 font-mono text-xs">{selectedStudy.studyInstanceUID}</p>
+                <p className="text-sm text-gray-900 font-mono text-xs">{selectedStudy.MainDicomTags?.StudyInstanceUID}</p>
               </div>
             </div>
           </CardContent>
