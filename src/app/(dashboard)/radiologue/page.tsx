@@ -1,0 +1,242 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { 
+  Activity, 
+  Clock, 
+  CheckCircle, 
+  AlertTriangle, 
+  FileText,
+  Eye,
+  Calendar,
+  Database
+} from "lucide-react";
+import Link from "next/link";
+import { api } from "@/lib/api";
+
+interface DashboardStats {
+  examensEnAttente: number;
+  examensEnCours: number;
+  examensTermines: number;
+  examensUrgents: number;
+}
+
+interface RecentExam {
+  id: string;
+  patient: {
+    nom: string;
+    prenom: string;
+  };
+  typeExamen: {
+    nom: string;
+  };
+  dateExamen: string;
+  statut: string;
+  urgent: boolean;
+}
+
+export default function RadiologueDashboard() {
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [recentExams, setRecentExams] = useState<RecentExam[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        // Fetch statistics from localhost:3001/api/examens-medicaux/radiologue/statistiques
+        const statsResponse = await api.get('/examens-medicaux/radiologue/statistiques');
+        setStats(statsResponse.data);
+
+        // Fetch recent exams from localhost:3001/api/examens-medicaux/radiologue/examens-recents
+        const recentResponse = await api.get('/examens-medicaux/radiologue/examens-recents');
+        setRecentExams(recentResponse.data);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
+
+  const getStatusBadge = (status: string, urgent: boolean) => {
+    if (urgent) {
+      return <Badge variant="destructive">Urgent</Badge>;
+    }
+    
+    switch (status) {
+      case 'EN_ATTENTE':
+        return <Badge variant="secondary">En attente</Badge>;
+      case 'EN_COURS':
+        return <Badge variant="default">En cours</Badge>;
+      case 'TERMINE':
+        return <Badge variant="outline">Terminé</Badge>;
+      default:
+        return <Badge variant="secondary">{status}</Badge>;
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">Tableau de bord</h1>
+        <p className="text-gray-600">Vue d'ensemble de vos examens radiologiques</p>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">En attente</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{stats?.examensEnAttente || 0}</div>
+            <p className="text-xs text-muted-foreground">Examens en attente d'analyse</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">En cours</CardTitle>
+            <Activity className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">{stats?.examensEnCours || 0}</div>
+            <p className="text-xs text-muted-foreground">Examens en cours d'analyse</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Terminés</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">{stats?.examensTermines || 0}</div>
+            <p className="text-xs text-muted-foreground">Examens terminés</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Urgents</CardTitle>
+            <AlertTriangle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">{stats?.examensUrgents || 0}</div>
+            <p className="text-xs text-muted-foreground">Examens urgents</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Recent Exams */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Examens récents</CardTitle>
+            <Link href="/radiologue/examens">
+              <Button variant="outline" size="sm">
+                Voir tous
+              </Button>
+            </Link>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {recentExams.length === 0 ? (
+            <div className="text-center py-8 text-gray-500">
+              <FileText className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+              <p>Aucun examen récent</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {recentExams.map((exam) => (
+                <div
+                  key={exam.id}
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  <div className="flex items-center space-x-4">
+                    <div className="flex-shrink-0">
+                      <FileText className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-medium text-gray-900">
+                        {exam.patient.prenom} {exam.patient.nom}
+                      </h3>
+                      <p className="text-sm text-gray-500">{exam.typeExamen.nom}</p>
+                      <div className="flex items-center space-x-2 mt-1">
+                        <Calendar className="h-3 w-3 text-gray-400" />
+                        <span className="text-xs text-gray-500">
+                          {formatDate(exam.dateExamen)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {getStatusBadge(exam.statut, exam.urgent)}
+                    <Link href={`/radiologue/examens/${exam.id}`}>
+                      <Button variant="ghost" size="sm">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Quick Actions */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Actions rapides</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <Link href="/radiologue/examens?status=EN_ATTENTE">
+              <Button className="w-full justify-start" variant="outline">
+                <Clock className="mr-2 h-4 w-4" />
+                Examiner les examens en attente
+              </Button>
+            </Link>
+            <Link href="/radiologue/examens?status=URGENT">
+              <Button className="w-full justify-start" variant="outline">
+                <AlertTriangle className="mr-2 h-4 w-4" />
+                Voir les urgences
+              </Button>
+            </Link>
+            <Link href="/radiologue/dicom">
+              <Button className="w-full justify-start" variant="outline">
+                <Database className="mr-2 h-4 w-4" />
+                Accéder aux images DICOM
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+} 

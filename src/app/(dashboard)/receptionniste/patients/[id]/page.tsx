@@ -2,96 +2,134 @@
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { patientsService, Patient } from "@/lib/services/patients.service";
+import { consultationMedicaleService } from "@/lib/services/consultation-medicale.service";
 import { Button } from "@/components/ui/button";
-import { Loader2, UserCircle2, FileText, Stethoscope, FlaskConical, ArrowLeft, Droplets, BadgeInfo } from "lucide-react";
+import { Loader2, UserCircle2, FileText, Stethoscope, FlaskConical, ArrowLeft, Droplets, BadgeInfo, User } from "lucide-react";
 import Link from "next/link";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-export default function PatientProfilePage() {
+export default function ReceptionnistePatientDetailPage() {
   const router = useRouter();
   const { id } = useParams();
   const [patient, setPatient] = useState<Patient | null>(null);
+  const [consultationCount, setConsultationCount] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    patientsService.getById(id as string)
-      .then(setPatient)
-      .catch(() => setError("Patient introuvable"))
-      .finally(() => setLoading(false));
+    if (id) {
+      fetchData(id as string);
+    }
   }, [id]);
 
-  if (loading) {
-    return <div className="flex justify-center items-center h-64"><Loader2 className="animate-spin w-8 h-8 text-emerald-600" /></div>;
+  async function fetchData(patientID: string) {
+    setLoading(true);
+    try {
+      const [patientData, countData] = await Promise.all([
+        patientsService.getById(patientID),
+        consultationMedicaleService.getConsultationCount(patientID),
+      ]);
+      setPatient(patientData);
+      setConsultationCount(countData.count);
+    } catch (error) {
+      console.error('Erreur lors du fetch des données:', error);
+    } finally {
+      setLoading(false);
+    }
   }
-  if (error || !patient) {
-    return <div className="text-center text-red-500 py-8">{error || "Patient introuvable"}</div>;
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <Loader2 className="animate-spin w-8 h-8 text-emerald-600" />
+      </div>
+    );
+  }
+
+  if (!patient) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="text-gray-500">Patient introuvable.</div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8 space-y-8">
-      {/* Sticky retour */}
-      <div className="sticky top-4 z-20 flex justify-start mb-2">
-        <Button asChild variant="outline" className="flex items-center gap-2">
-          <Link href="/receptionniste/patients"><ArrowLeft className="w-4 h-4" /> Retour à la liste</Link>
-        </Button>
+    <div className="space-y-6 p-6">
+      <div className="flex items-center gap-3 mb-6">
+        <User className="h-8 w-8 text-emerald-600" />
+        <h1 className="text-3xl font-bold text-emerald-700">Informations Patient</h1>
       </div>
-      {/* Header patient */}
-      <div className="flex flex-col md:flex-row items-center gap-6 bg-white rounded-xl shadow p-6 border">
-        <div className="flex-shrink-0">
-          <UserCircle2 className="w-24 h-24 text-emerald-400" />
-        </div>
-        <div className="flex-1 space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="text-3xl font-bold text-gray-900">{patient.nom} {patient.prenom}</h2>
-            {patient.groupeSanguin && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-100 text-emerald-700 text-xs font-semibold"><Droplets className="w-4 h-4" /> {patient.groupeSanguin}</span>
+
+      <div className="grid gap-6">
+        {/* Informations du patient */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Informations personnelles
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <span className="font-medium text-gray-700">Nom complet:</span>
+                <p className="text-gray-900">{patient.prenom} {patient.nom}</p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Date de naissance:</span>
+                <p className="text-gray-900">{patient.dateNaissance}</p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Email:</span>
+                <p className="text-gray-900">{patient.email}</p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Téléphone:</span>
+                <p className="text-gray-900">{patient.telephone}</p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Genre:</span>
+                <p className="text-gray-900">{patient.genre}</p>
+              </div>
+              <div>
+                <span className="font-medium text-gray-700">Groupe sanguin:</span>
+                <p className="text-gray-900">{patient.groupeSanguin}</p>
+              </div>
+            </div>
+            {patient.adresse && (
+              <div>
+                <span className="font-medium text-gray-700">Adresse:</span>
+                <p className="text-gray-900">{patient.adresse}</p>
+              </div>
             )}
-            {patient.genre && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-blue-100 text-blue-700 text-xs font-semibold"><BadgeInfo className="w-4 h-4" /> {patient.genre === "M" ? "Homme" : "Femme"}</span>
-            )}
-          </div>
-          <div className="text-gray-600 flex flex-wrap gap-4">
-            <span>Email : <span className="font-medium text-gray-800">{patient.email}</span></span>
-            <span>Téléphone : <span className="font-medium text-gray-800">{patient.telephone}</span></span>
-            {patient.dateNaissance && <span>Date de naissance : <span className="font-medium text-gray-800">{patient.dateNaissance}</span></span>}
-            {patient.adresse && <span>Adresse : <span className="font-medium text-gray-800">{patient.adresse}</span></span>}
-          </div>
-        </div>
-      </div>
-      {/* Dossier médical */}
-      <div className="bg-gray-50 rounded-xl shadow p-6 border">
-        <div className="flex items-center gap-2 mb-2">
-          <FileText className="w-5 h-5 text-emerald-600" />
-          <h3 className="text-xl font-semibold">Dossier médical</h3>
-        </div>
-        {patient.dossierMedical ? (
-          <div className="flex flex-wrap gap-6 text-gray-700">
-            <div>État : <span className="font-semibold text-emerald-700">{patient.dossierMedical.etatDossier}</span></div>
-            <div>Date de création : {patient.dossierMedical.dateCreation}</div>
-          </div>
-        ) : (
-          <div className="text-gray-400 italic">Aucun dossier médical trouvé.</div>
-        )}
-      </div>
-      {/* Résumé consultations/examens + bouton rendez-vous */}
-      <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-white rounded-xl shadow p-6 border">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2 text-emerald-700 font-semibold">
-            <Stethoscope className="w-5 h-5" />
-            {patient.consultations ? patient.consultations.length : 0} consultation(s) trouvée(s)
-          </div>
-          <div className="flex items-center gap-2 text-emerald-700 font-semibold">
-            <FlaskConical className="w-5 h-5" />
-            {patient.examens ? patient.examens.length : 0} examen(s) médical(aux) trouvé(s)
-          </div>
-        </div>
-        <Button asChild className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mt-4 md:mt-0">
-          <Link href={`/receptionniste/rendez-vous?patientID=${patient.patientID}`}>
-            Créer rendez-vous avec un médecin
-          </Link>
-        </Button>
+          </CardContent>
+        </Card>
+
+        {/* Statistiques des consultations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Statistiques médicales
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="bg-emerald-50 p-4 rounded-lg">
+              <div className="flex items-center gap-3">
+                <FileText className="h-6 w-6 text-emerald-600" />
+                <div>
+                  <p className="text-lg font-semibold text-emerald-900">
+                    {consultationCount} consultation{consultationCount > 1 ? 's' : ''}
+                  </p>
+                  <p className="text-sm text-emerald-700">
+                    Nombre total de consultations effectuées
+                  </p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
