@@ -10,12 +10,10 @@ import {
   Search, 
   Eye, 
   Download, 
-  Upload,
   Calendar,
   User,
   FileText,
-  Image as ImageIcon,
-  Plus
+  Image as ImageIcon
 } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
@@ -52,7 +50,6 @@ export default function RadiologueDicom() {
   const [series, setSeries] = useState<DicomSeries[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     fetchStudies();
@@ -112,33 +109,6 @@ export default function RadiologueDicom() {
     fetchSeries(study.ID);
   };
 
-  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    try {
-      setUploading(true);
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const response = await api.post('/dicom/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-
-      if (response.data) {
-        fetchStudies();
-      } else {
-        console.error('Upload failed');
-      }
-    } catch (error) {
-      console.error('Error uploading file:', error);
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
     // DICOM dates are typically in YYYYMMDD format
@@ -169,24 +139,6 @@ export default function RadiologueDicom() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Images DICOM</h1>
           <p className="text-gray-600">Gestion des études et séries DICOM</p>
-        </div>
-        <div className="flex items-center space-x-2">
-          <input
-            type="file"
-            accept=".dcm"
-            onChange={handleFileUpload}
-            className="hidden"
-            id="dicom-upload"
-            disabled={uploading}
-          />
-          <label htmlFor="dicom-upload">
-            <Button disabled={uploading} asChild>
-              <span>
-                <Upload className="mr-2 h-4 w-4" />
-                {uploading ? 'Upload...' : 'Upload DICOM'}
-              </span>
-            </Button>
-          </label>
         </div>
       </div>
 

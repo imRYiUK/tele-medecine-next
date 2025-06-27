@@ -17,11 +17,13 @@ import {
   ChevronRight,
   Maximize,
   Settings,
-  Info
+  Info,
+  Users
 } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import DicomViewer from "@/components/DicomViewer";
+import ImageCollaboration from "@/components/ImageCollaboration";
 
 interface DicomInstance {
   ID: string;
@@ -64,11 +66,13 @@ export default function SeriesDetailPage() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentInstanceIndex, setCurrentInstanceIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string>('');
 
   useEffect(() => {
     if (seriesId) {
       fetchSeriesDetails();
       fetchInstances();
+      fetchCurrentUser();
     }
   }, [seriesId]);
 
@@ -112,6 +116,15 @@ export default function SeriesDetailPage() {
       setError('Failed to load instances');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await api.get('/users/profile/me');
+      setCurrentUserId(response.data?.utilisateurID || '');
+    } catch (error) {
+      console.error('Error fetching current user:', error);
     }
   };
 
@@ -297,16 +310,16 @@ export default function SeriesDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-300px)]">
         {/* Instances List */}
-        <Card className="lg:col-span-1">
-          <CardHeader>
+        <Card className="lg:col-span-1 flex flex-col">
+          <CardHeader className="flex-shrink-0">
             <CardTitle>
               Images ({filteredInstances.length})
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
+          <CardContent className="flex-1 overflow-hidden">
+            <div className="space-y-2 h-full overflow-y-auto">
               {filteredInstances.map((instance, index) => (
                 <div
                   key={instance.ID}
@@ -350,81 +363,106 @@ export default function SeriesDetailPage() {
           </CardContent>
         </Card>
 
-        {/* DICOM Viewer */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <span>
-                Image {selectedInstance?.MainDicomTags?.InstanceNumber} 
-                {selectedInstance && (
-                  <span className="text-sm text-gray-500 ml-2">
-                    ({currentInstanceIndex + 1} sur {instances.length})
-                  </span>
-                )}
-              </span>
-              <div className="flex items-center space-x-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePreviousInstance}
-                  disabled={currentInstanceIndex === 0}
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleNextInstance}
-                  disabled={currentInstanceIndex === instances.length - 1}
-                >
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {selectedInstance ? (
-              <div className="space-y-4">
-                <DicomViewer
-                  imageUrl={`dicom/instances/${selectedInstance.ID}/preview?quality=90`}
-                  instanceId={selectedInstance.ID}
-                  onError={(error) => console.error('DICOM viewer error:', error)}
+        {/* DICOM Viewer and Collaboration */}
+        <div className="lg:col-span-3 flex flex-col space-y-6 h-full">
+          {/* DICOM Viewer */}
+          <Card className="flex-1 flex flex-col">
+            <CardHeader className="flex-shrink-0">
+              <CardTitle className="flex items-center justify-between">
+                <span>
+                  Image {selectedInstance?.MainDicomTags?.InstanceNumber} 
+                  {selectedInstance && (
+                    <span className="text-sm text-gray-500 ml-2">
+                      ({currentInstanceIndex + 1} sur {instances.length})
+                    </span>
+                  )}
+                </span>
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handlePreviousInstance}
+                    disabled={currentInstanceIndex === 0}
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleNextInstance}
+                    disabled={currentInstanceIndex === instances.length - 1}
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="flex-1 flex flex-col">
+              {selectedInstance ? (
+                <div className="flex-1 flex flex-col space-y-4">
+                  <div className="flex-1 min-h-0">
+                    <DicomViewer
+                      imageUrl={`dicom/instances/${selectedInstance.ID}/preview?quality=90`}
+                      instanceId={selectedInstance.ID}
+                      onError={(error) => console.error('DICOM viewer error:', error)}
+                    />
+                  </div>
+                  
+                  {/* Instance Details */}
+                  <div className="flex-shrink-0">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      <div>
+                        <label className="text-gray-500">Numéro d'image</label>
+                        <p className="font-medium">{selectedInstance.MainDicomTags?.InstanceNumber}</p>
+                      </div>
+                      <div>
+                        <label className="text-gray-500">UID SOP</label>
+                        <p className="font-mono text-xs truncate">{selectedInstance.MainDicomTags?.SOPInstanceUID}</p>
+                      </div>
+                      {selectedInstance.MainDicomTags?.AcquisitionDate && (
+                        <div>
+                          <label className="text-gray-500">Date d'acquisition</label>
+                          <p>{formatDate(selectedInstance.MainDicomTags.AcquisitionDate)}</p>
+                        </div>
+                      )}
+                      {selectedInstance.MainDicomTags?.ImageType && (
+                        <div>
+                          <label className="text-gray-500">Type d'image</label>
+                          <p className="text-xs">{selectedInstance.MainDicomTags.ImageType}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex-1 flex items-center justify-center text-gray-500">
+                  <div className="text-center">
+                    <Eye className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <p>Sélectionnez une image pour la visualiser</p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Image Collaboration */}
+          {selectedInstance && currentUserId && (
+            <Card className="flex-shrink-0">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Users className="mr-2 h-5 w-5" />
+                  Collaboration
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ImageCollaboration
+                  imageId={selectedInstance.ID}
+                  currentUserId={currentUserId}
                 />
-                
-                {/* Instance Details */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <label className="text-gray-500">Numéro d'image</label>
-                    <p className="font-medium">{selectedInstance.MainDicomTags?.InstanceNumber}</p>
-                  </div>
-                  <div>
-                    <label className="text-gray-500">UID SOP</label>
-                    <p className="font-mono text-xs truncate">{selectedInstance.MainDicomTags?.SOPInstanceUID}</p>
-                  </div>
-                  {selectedInstance.MainDicomTags?.AcquisitionDate && (
-                    <div>
-                      <label className="text-gray-500">Date d'acquisition</label>
-                      <p>{formatDate(selectedInstance.MainDicomTags.AcquisitionDate)}</p>
-                    </div>
-                  )}
-                  {selectedInstance.MainDicomTags?.ImageType && (
-                    <div>
-                      <label className="text-gray-500">Type d'image</label>
-                      <p className="text-xs">{selectedInstance.MainDicomTags.ImageType}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center justify-center h-64 text-gray-500">
-                <div className="text-center">
-                  <Eye className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <p>Sélectionnez une image pour la visualiser</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </div>
     </div>
   );

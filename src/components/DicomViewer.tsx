@@ -210,9 +210,9 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
   }
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full space-y-4">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg flex-shrink-0">
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
@@ -269,16 +269,16 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
       </div>
 
       {/* Image Canvas */}
-      <div className="relative bg-gray-100 rounded-lg overflow-hidden">
+      <div className="flex-1 relative bg-gray-100 rounded-lg overflow-hidden min-h-0">
         {isLoading && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75">
+          <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
         )}
         
         <canvas
           ref={canvasRef}
-          className="max-w-full h-auto"
+          className="w-full h-full object-contain"
           style={{
             transform: `scale(${zoom})`,
             transformOrigin: 'center',
@@ -288,7 +288,7 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
       </div>
 
       {/* Image Info */}
-      <div className="text-sm text-gray-600">
+      <div className="text-sm text-gray-600 flex-shrink-0">
         <p>Instance ID: {instanceId}</p>
         <p>Zoom: {zoom.toFixed(2)}x</p>
         <p>Window: {windowCenter} / {windowWidth}</p>
