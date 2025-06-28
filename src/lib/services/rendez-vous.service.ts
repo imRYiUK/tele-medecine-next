@@ -47,5 +47,8 @@ export const rendezVousService = {
     const res = await api.get(`/rendez-vous/radiologue/${radiologueID}`);
     return res.data;
   },
+  async remove(id: string): Promise<void> {
+    await api.delete(`/rendez-vous/${id}`);
+  },
   // Ajouter d'autres méthodes si besoin (getById, update, remove)
 }; 

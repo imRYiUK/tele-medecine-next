@@ -365,6 +365,9 @@ export default function ReceptionnisteRendezVousPage() {
   const [selectedSlot, setSelectedSlot] = useState<{ start: Date, end: Date } | null>(null);
   const [calendarView, setCalendarView] = useState<View>("week");
   const [calendarDate, setCalendarDate] = useState<Date>(new Date());
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; event: CalendarEvent } | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
 
   useEffect(() => {
     fetchRdvs();
@@ -491,8 +494,54 @@ export default function ReceptionnisteRendezVousPage() {
     }
   }
 
+  function handleEventClick(event: CalendarEvent, e: React.SyntheticEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Check if it's a right click (context menu)
+    if ((e.nativeEvent as MouseEvent).button === 2) {
+      // Right click - open edit dialog directly
+      setSelectedEvent(event);
+      setEditDialogOpen(true);
+    } else {
+      // Left click - show context menu
+      const mouseEvent = e.nativeEvent as MouseEvent;
+      setContextMenu({
+        x: mouseEvent.clientX,
+        y: mouseEvent.clientY,
+        event
+      });
+    }
+  }
+
+  function handleEventContextMenu(event: CalendarEvent, e: React.MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Right click - open edit dialog directly
+    setSelectedEvent(event);
+    setEditDialogOpen(true);
+  }
+
+  async function handleDeleteEvent(event: CalendarEvent) {
+    try {
+      await rendezVousService.remove(event.resource.rendezVousID);
+      toast.success('Rendez-vous supprimé');
+      fetchRdvs();
+      setContextMenu(null);
+    } catch (err) {
+      toast.error('Erreur lors de la suppression du rendez-vous');
+    }
+  }
+
+  function handleEditEvent(event: CalendarEvent) {
+    setSelectedEvent(event);
+    setEditDialogOpen(true);
+    setContextMenu(null);
+  }
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" onClick={() => setContextMenu(null)}>
       {!patientID && (
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           {/*<DialogTrigger asChild>*/}
@@ -510,6 +559,52 @@ export default function ReceptionnisteRendezVousPage() {
             />
           </DialogContent>
         </Dialog>
+      )}
+      
+      {/* Edit Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Modifier le rendez-vous</DialogTitle>
+          </DialogHeader>
+          {selectedEvent && (
+            <RendezVousForm
+              onCreated={() => {
+                handleCreated();
+                setEditDialogOpen(false);
+                setSelectedEvent(null);
+              }}
+              initialDateHeure={selectedEvent ? formatDate(selectedEvent.start, "yyyy-MM-dd'T'HH:mm") : undefined}
+              initialEndHeure={selectedEvent && selectedEvent.end ? formatDate(selectedEvent.end, "yyyy-MM-dd'T'HH:mm") : undefined}
+              existingAppointments={rdvs}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 bg-white border rounded-lg shadow-lg py-2 min-w-[150px]"
+          style={{
+            left: contextMenu.x,
+            top: contextMenu.y,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <button
+            className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm"
+            onClick={() => handleEditEvent(contextMenu.event)}
+          >
+            ✏️ Modifier
+          </button>
+          <button
+            className="w-full text-left px-4 py-2 hover:bg-gray-100 text-sm text-red-600"
+            onClick={() => handleDeleteEvent(contextMenu.event)}
+          >
+            🗑️ Supprimer
+          </button>
+        </div>
       )}
       {patientID && <RendezVousForm patientID={patientID} onCreated={handleCreated} existingAppointments={rdvs} />}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -572,6 +667,7 @@ export default function ReceptionnisteRendezVousPage() {
             resizable
             onEventResize={handleEventResize}
             onEventDrop={handleEventDrop}
+            onSelectEvent={handleEventClick}
             eventPropGetter={(event) => {
               // Get the overlap group for this event from the pre-calculated map
               const overlapGroup = overlapGroupsMap.get(event.resource.rendezVousID) || [event];
