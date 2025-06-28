@@ -70,7 +70,7 @@ export default function RadiologueRendezVousPage() {
     function handleSelectEvent(event: CalendarEvent) {
         const patientID = event.resource?.patient?.patientID;
         if (patientID) {
-            router.push(`/radiologue/examens?patientID=${patientID}`);
+            router.push(`/radiologue/patients/${patientID}`);
         }
     }
 
@@ -179,7 +179,7 @@ export default function RadiologueRendezVousPage() {
                                     onClick={() => {
                                         const patientID = rdv.patient?.patientID;
                                         if (patientID) {
-                                            router.push(`/radiologue/examens?patientID=${patientID}`);
+                                            router.push(`/radiologue/patients/${patientID}`);
                                         }
                                     }}
                                 >

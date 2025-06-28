@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +62,7 @@ interface UploadedImage {
 
 export default function NouvelExamen() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [examTypes, setExamTypes] = useState<TypeExamen[]>([]);
   const [dossier, setDossier] = useState<Dossier | null>(null);
@@ -84,6 +85,17 @@ export default function NouvelExamen() {
   useEffect(() => {
     fetchInitialData();
   }, []);
+
+  // Auto-select patient if patientID is in query params
+  useEffect(() => {
+    const patientIDFromQuery = searchParams.get("patientID");
+    if (patientIDFromQuery && patients.length > 0) {
+      setFormData((prev) => ({ ...prev, patientID: patientIDFromQuery }));
+      const patient = patients.find((p) => p.patientID === patientIDFromQuery);
+      setSelectedPatient(patient || null);
+      fetchDossierForPatient(patientIDFromQuery);
+    }
+  }, [searchParams, patients]);
 
   const fetchInitialData = async () => {
     try {
@@ -205,7 +217,7 @@ export default function NouvelExamen() {
       url
     };
 
-    alert(JSON.stringify(payload));
+    //alert(JSON.stringify(payload));
 
     await api.post('/examens-medicaux/images', payload);
   };
