@@ -21,7 +21,8 @@ import {
   Upload,
   Send,
   Eye,
-  Lock
+  Lock,
+  Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
@@ -90,6 +91,7 @@ export default function RadiologueExamDetail() {
   const [uploading, setUploading] = useState(false);
   const [canEdit, setCanEdit] = useState(false);
   const [permissionLoading, setPermissionLoading] = useState(true);
+  const [deletingImage, setDeletingImage] = useState<string | null>(null);
 
   useEffect(() => {
     if (examId) {
@@ -174,6 +176,31 @@ export default function RadiologueExamDetail() {
       console.error('Error uploading image:', error);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const handleDeleteImage = async (imageId: string) => {
+    if (!confirm('Êtes-vous sûr de vouloir supprimer cette image ?')) {
+      return;
+    }
+
+    try {
+      setDeletingImage(imageId);
+      await api.delete(`/examens-medicaux/images/${imageId}`);
+      
+      // Si l'image supprimée était sélectionnée, désélectionner
+      if (selectedImage?.id === imageId) {
+        setSelectedImage(null);
+        setMessages([]);
+      }
+      
+      // Recharger les images
+      fetchImages();
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      alert('Erreur lors de la suppression de l\'image');
+    } finally {
+      setDeletingImage(null);
     }
   };
 
@@ -278,222 +305,283 @@ export default function RadiologueExamDetail() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white py-8 px-2 sm:px-6 lg:px-12">
+    <div className="bg-gradient-to-br from-blue-50 to-white py-6 px-4 sm:px-6 lg:px-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
-        <div className="flex items-center space-x-4">
-          <Link href="/radiologue/examens">
-            <Button variant="outline" size="sm" className="rounded-full shadow-sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Retour
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight">
-              Examen - {exam.patient.prenom} {exam.patient.nom}
-            </h1>
-            <p className="text-blue-700 font-medium">{exam.typeExamen.nom}</p>
+      <div className="max-w-7xl mx-auto">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
+          <div className="flex items-center space-x-4">
+            <Link href="/radiologue/examens">
+              <Button variant="outline" size="sm" className="rounded-full shadow-sm">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Retour
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-blue-900 tracking-tight">
+                Examen - {exam.patient.prenom} {exam.patient.nom}
+              </h1>
+              <p className="text-blue-700 font-medium text-sm sm:text-base">{exam.typeExamen.nom}</p>
+            </div>
+          </div>
+          <div className="flex items-center space-x-2">
+            {getStatusBadge(exam.statut, exam.urgent)}
           </div>
         </div>
-        <div className="flex items-center space-x-2">
-          {getStatusBadge(exam.statut, exam.urgent)}
-        </div>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Exam Details */}
-        <div className="lg:col-span-1 space-y-8">
-          <Card className="shadow-md border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center text-blue-800 text-lg font-semibold">
-                <User className="mr-2 h-5 w-5 text-blue-400" />
-                Informations patient
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom complet</label>
-                <p className="text-base text-gray-900 font-medium">
-                  {exam.patient.prenom} {exam.patient.nom}
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Âge</label>
-                <p className="text-base text-gray-900 font-medium">
-                  {calculateAge(exam.patient.dateNaissance)} ans
-                </p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Téléphone</label>
-                <p className="text-base text-gray-900 font-medium">{exam.patient.telephone}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</label>
-                <p className="text-base text-gray-900 font-medium">{exam.patient.email}</p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="border-t border-gray-200 my-4" />
-
-          <Card className="shadow-md border-0">
-            <CardHeader>
-              <CardTitle className="flex items-center text-blue-800 text-lg font-semibold">
-                <FileText className="mr-2 h-5 w-5 text-blue-400" />
-                Détails de l'examen
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Type d'examen</label>
-                <p className="text-base text-gray-900 font-medium">{exam.typeExamen.nom}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Catégorie</label>
-                <p className="text-base text-gray-900 font-medium">{exam.typeExamen.categorie}</p>
-              </div>
-              <div>
-                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</label>
-                <p className="text-base text-gray-900 font-medium">{formatDate(exam.dateExamen)}</p>
-              </div>
-              {exam.description && (
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</label>
-                  <p className="text-base text-gray-900 font-medium">{exam.description}</p>
-                </div>
-              )}
-              {exam.resultat && (
-                <div>
-                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Résultat</label>
-                  <p className="text-base text-green-800 bg-green-50 p-2 rounded font-medium">
-                    {exam.resultat}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Images and Analysis */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Images */}
-          <Card className="shadow-md border-0">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center text-blue-800 text-lg font-semibold">
-                  <ImageIcon className="mr-2 h-5 w-5 text-blue-400" />
-                  Images <span className="ml-1 text-blue-500 font-bold">({images.length})</span>
-                  {!permissionLoading && !canEdit && (
-                    <Lock className="ml-2 h-4 w-4 text-gray-400" />
-                  )}
+        {/* Main Content */}
+        <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          {/* Left Sidebar - Patient & Exam Info */}
+          <div className="xl:col-span-1 space-y-6">
+            {/* Patient Info */}
+            <Card className="shadow-sm border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-blue-800 text-base font-semibold">
+                  <User className="mr-2 h-4 w-4 text-blue-500" />
+                  Patient
                 </CardTitle>
-                {canEdit && (
-                  <div>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                      id="image-upload"
-                      disabled={uploading}
-                    />
-                    <label htmlFor="image-upload">
-                      <Button disabled={uploading} size="sm" asChild className="rounded-full">
-                        <span>
-                          <Upload className="mr-2 h-4 w-4" />
-                          {uploading ? 'Upload...' : 'Ajouter'}
-                        </span>
-                      </Button>
-                    </label>
+              </CardHeader>
+              <CardContent className="space-y-3 pt-0">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Nom</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {exam.patient.prenom} {exam.patient.nom}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Âge</span>
+                  <span className="text-sm font-medium text-gray-900">
+                    {calculateAge(exam.patient.dateNaissance)} ans
+                  </span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Téléphone</span>
+                  <span className="text-sm font-medium text-gray-900">{exam.patient.telephone}</span>
+                </div>
+                <div className="flex justify-between items-center py-2">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Email</span>
+                  <span className="text-sm font-medium text-gray-900 truncate">{exam.patient.email}</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Exam Details */}
+            <Card className="shadow-sm border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center text-blue-800 text-base font-semibold">
+                  <FileText className="mr-2 h-4 w-4 text-blue-500" />
+                  Examen
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3 pt-0">
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Type</span>
+                  <span className="text-sm font-medium text-gray-900">{exam.typeExamen.nom}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Catégorie</span>
+                  <span className="text-sm font-medium text-gray-900">{exam.typeExamen.categorie}</span>
+                </div>
+                <div className="flex justify-between items-center py-2 border-b border-gray-100">
+                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">Date</span>
+                  <span className="text-sm font-medium text-gray-900">{formatDate(exam.dateExamen)}</span>
+                </div>
+                {exam.description && (
+                  <div className="py-2 border-b border-gray-100">
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">Description</span>
+                    <span className="text-sm text-gray-900">{exam.description}</span>
                   </div>
                 )}
-              </div>
-              {!permissionLoading && !canEdit && (
-                <p className="text-sm text-gray-600 mt-2">
-                  Vous ne pouvez pas ajouter d'images à cet examen
-                </p>
-              )}
-            </CardHeader>
-            <CardContent>
-              {images.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <ImageIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
-                  <p>Aucune image disponible</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-                  {images.map((image) => (
-                    <div
-                      key={image.id}
-                      className={`border rounded-xl p-2 cursor-pointer transition-colors shadow-sm bg-white hover:shadow-md ${
-                        selectedImage?.id === image.id
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'hover:bg-gray-50'
-                      }`}
-                      onClick={() => handleImageSelect(image)}
-                    >
-                      <img
-                        src={image.url}
-                        alt={image.description}
-                        className="w-full h-32 object-cover rounded-lg shadow"
-                      />
-                      <p className="text-xs text-gray-600 mt-2 truncate">
-                        {image.description}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Analysis */}
-          {exam.statut !== 'TERMINE' && (
-            <Card className="shadow-md border-0">
-              <CardHeader>
-                <CardTitle className="flex items-center text-blue-800 text-lg font-semibold">
-                  <CheckCircle className="mr-2 h-5 w-5 text-blue-400" />
-                  Analyse radiologique
-                  {!permissionLoading && !canEdit && (
-                    <Lock className="ml-2 h-4 w-4 text-gray-400" />
-                  )}
-                </CardTitle>
-                {!permissionLoading && !canEdit && (
-                  <p className="text-sm text-gray-600 mt-2">
-                    Vous n'avez pas les permissions pour modifier cet examen
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {canEdit ? (
-                  <>
-                    <Textarea
-                      placeholder="Entrez votre analyse radiologique..."
-                      value={analysisResult}
-                      onChange={(e) => setAnalysisResult(e.target.value)}
-                      rows={4}
-                      className="rounded-lg border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
-                    />
-                    <Button 
-                      onClick={markAsAnalyzed}
-                      disabled={!analysisResult.trim()}
-                      className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow"
-                    >
-                      <CheckCircle className="mr-2 h-4 w-4" />
-                      Marquer comme analysé
-                    </Button>
-                  </>
-                ) : (
-                  <div className="text-center py-8">
-                    <Lock className="mx-auto h-12 w-12 text-gray-300 mb-4" />
-                    <p className="text-gray-500">
-                      Lecture seule - Vous ne pouvez pas modifier cet examen
-                    </p>
+                {exam.resultat && (
+                  <div className="py-2">
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider block mb-1">Résultat</span>
+                    <span className="text-sm text-green-800 bg-green-50 p-2 rounded font-medium block">
+                      {exam.resultat}
+                    </span>
                   </div>
                 )}
               </CardContent>
             </Card>
-          )}
+          </div>
+
+          {/* Main Content Area */}
+          <div className="xl:col-span-3 space-y-6">
+            {/* Images Section */}
+            <Card className="shadow-sm border-0 bg-white/80 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center text-blue-800 text-lg font-semibold">
+                    <ImageIcon className="mr-2 h-5 w-5 text-blue-500" />
+                    Images médicales
+                    <span className="ml-2 text-blue-500 font-bold">({images.length})</span>
+                    {!permissionLoading && !canEdit && (
+                      <Lock className="ml-2 h-4 w-4 text-gray-400" />
+                    )}
+                  </CardTitle>
+                  {canEdit && (
+                    <div>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileUpload}
+                        className="hidden"
+                        id="image-upload"
+                        disabled={uploading}
+                      />
+                      <label htmlFor="image-upload">
+                        <Button disabled={uploading} size="sm" asChild className="rounded-full">
+                          <span>
+                            <Upload className="mr-2 h-4 w-4" />
+                            {uploading ? 'Upload...' : 'Ajouter'}
+                          </span>
+                        </Button>
+                      </label>
+                    </div>
+                  )}
+                </div>
+                {!permissionLoading && !canEdit && (
+                  <p className="text-sm text-gray-600 mt-2">
+                    Vous ne pouvez pas ajouter d'images à cet examen
+                  </p>
+                )}
+              </CardHeader>
+              <CardContent>
+                {images.length === 0 ? (
+                  <div className="text-center py-12 text-gray-500">
+                    <ImageIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+                    <p className="text-lg font-medium">Aucune image disponible</p>
+                    <p className="text-sm">Ajoutez des images pour commencer l'analyse</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {images.map((image, index) => (
+                      <div
+                        key={image.id}
+                        className={`group relative bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${
+                          selectedImage?.id === image.id
+                            ? 'ring-2 ring-blue-500 shadow-lg'
+                            : 'hover:ring-1 hover:ring-blue-300'
+                        }`}
+                        onClick={() => handleImageSelect(image)}
+                      >
+                        {/* Image Placeholder */}
+                        <div className="relative h-40 bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+                          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-indigo-500/10"></div>
+                          <div className="relative z-10 text-center">
+                            <div className="w-16 h-16 bg-white/80 rounded-full flex items-center justify-center mx-auto mb-3 shadow-sm">
+                              <ImageIcon className="h-8 w-8 text-blue-600" />
+                            </div>
+                            <div className="bg-white/90 rounded-full px-3 py-1 inline-block shadow-sm">
+                              <span className="text-sm font-semibold text-blue-700">#{index + 1}</span>
+                            </div>
+                          </div>
+                          
+                          {/* Selection Indicator */}
+                          {selectedImage?.id === image.id && (
+                            <div className="absolute top-2 right-2">
+                              <div className="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center">
+                                <CheckCircle className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Delete Button */}
+                          {canEdit && (
+                            <div className="absolute top-2 left-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-6 h-6 p-0 bg-gray-400/80 hover:bg-red-500 text-white rounded-full shadow-sm opacity-60 hover:opacity-100 transition-all duration-200"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteImage(image.id);
+                                }}
+                                disabled={deletingImage === image.id}
+                              >
+                                {deletingImage === image.id ? (
+                                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                ) : (
+                                  <Trash2 className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Image Info */}
+                        <div className="p-4">
+                          <h3 className="font-semibold text-gray-900 text-sm mb-1 truncate">
+                            {image.description || `Image médicale ${index + 1}`}
+                          </h3>
+                          <div className="flex items-center justify-between text-xs text-gray-500">
+                            <span className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium">
+                              {image.type}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Hover Effect */}
+                        <div className="absolute inset-0 bg-blue-500/0 group-hover:bg-blue-500/5 transition-colors duration-300 pointer-events-none"></div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Analysis Section */}
+            {exam.statut !== 'TERMINE' && (
+              <Card className="shadow-sm border-0 bg-white/80 backdrop-blur-sm">
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center text-blue-800 text-lg font-semibold">
+                    <CheckCircle className="mr-2 h-5 w-5 text-blue-500" />
+                    Analyse radiologique
+                    {!permissionLoading && !canEdit && (
+                      <Lock className="ml-2 h-4 w-4 text-gray-400" />
+                    )}
+                  </CardTitle>
+                  {!permissionLoading && !canEdit && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      Vous n'avez pas les permissions pour modifier cet examen
+                    </p>
+                  )}
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {canEdit ? (
+                    <>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">
+                          Observations et conclusions
+                        </label>
+                        <Textarea
+                          placeholder="Décrivez vos observations radiologiques, anomalies détectées, et conclusions diagnostiques..."
+                          value={analysisResult}
+                          onChange={(e) => setAnalysisResult(e.target.value)}
+                          rows={6}
+                          className="rounded-lg border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100 resize-none"
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button 
+                          onClick={markAsAnalyzed}
+                          disabled={!analysisResult.trim()}
+                          className="rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow px-8"
+                        >
+                          <CheckCircle className="mr-2 h-4 w-4" />
+                          Finaliser l'analyse
+                        </Button>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Lock className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                      <p className="text-gray-500 font-medium">Lecture seule</p>
+                      <p className="text-sm text-gray-400">Vous ne pouvez pas modifier cet examen</p>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </div>
