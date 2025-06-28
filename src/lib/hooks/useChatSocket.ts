@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { useAuth } from './useAuth';
 import Cookies from 'js-cookie';
+import { getWebSocketUrl, getWebSocketOptions, WEBSOCKET_CONFIG } from '../config/websocket';
 
 interface ChatMessage {
   messageID: string;
@@ -68,15 +69,7 @@ export const useChatSocket = ({
     isConnectingRef.current = true;
 
     // Create socket connection
-    const socket = io('http://localhost:3001/chat', {
-      auth: {
-        token: token,
-      },
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
+    const socket = io(getWebSocketUrl(WEBSOCKET_CONFIG.NAMESPACES.CHAT), getWebSocketOptions(token));
 
     socketRef.current = socket;
 
@@ -92,7 +85,7 @@ export const useChatSocket = ({
         if (socket.connected) {
           socket.emit('ping');
         }
-      }, 30000); // Ping every 30 seconds
+      }, WEBSOCKET_CONFIG.CONNECTION.PING_INTERVAL);
     });
 
     socket.on('disconnect', () => {
