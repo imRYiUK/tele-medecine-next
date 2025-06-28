@@ -26,7 +26,7 @@ export default function AdminDashboard() {
         }
         const [etab, data] = await Promise.all([
           etablissementsService.getById(user.etablissementID),
-          dashboardService.getStats(user.etablissementID)
+          dashboardService.getStats()
         ]);
         setEtablissement(etab);
         setStats(data);

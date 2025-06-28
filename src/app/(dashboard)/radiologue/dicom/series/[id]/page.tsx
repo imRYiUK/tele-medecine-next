@@ -457,6 +457,7 @@ export default function SeriesDetailPage() {
               <CardContent>
                 <ImageCollaboration
                   imageId={selectedInstance.ID}
+                  sopInstanceUID={selectedInstance.ID}
                   currentUserId={currentUserId}
                 />
               </CardContent>

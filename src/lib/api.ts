@@ -25,7 +25,8 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Rediriger vers la page de connexion si le token est invalide
-      window.location.href = '/login';
+      //window.location.href = '/login';
+      alert('Token invalide');
     }
     return Promise.reject(error);
   }

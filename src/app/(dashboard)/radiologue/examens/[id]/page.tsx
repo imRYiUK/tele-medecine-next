@@ -20,10 +20,12 @@ import {
   Download,
   Upload,
   Send,
-  Eye
+  Eye,
+  Lock
 } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { radiologistApi } from "@/lib/api/radiologist";
 
 interface Exam {
   id: string;
@@ -86,13 +88,29 @@ export default function RadiologueExamDetail() {
   const [newMessage, setNewMessage] = useState("");
   const [selectedImage, setSelectedImage] = useState<MedicalImage | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [canEdit, setCanEdit] = useState(false);
+  const [permissionLoading, setPermissionLoading] = useState(true);
 
   useEffect(() => {
     if (examId) {
       fetchExamDetails();
       fetchImages();
+      checkPermissions();
     }
   }, [examId]);
+
+  const checkPermissions = async () => {
+    try {
+      setPermissionLoading(true);
+      const hasPermission = await radiologistApi.canEditExam(examId);
+      setCanEdit(hasPermission);
+    } catch (error) {
+      console.error('Error checking permissions:', error);
+      setCanEdit(false);
+    } finally {
+      setPermissionLoading(false);
+    }
+  };
 
   const fetchExamDetails = async () => {
     try {
@@ -384,26 +402,36 @@ export default function RadiologueExamDetail() {
                 <CardTitle className="flex items-center">
                   <ImageIcon className="mr-2 h-5 w-5" />
                   Images ({images.length})
+                  {!permissionLoading && !canEdit && (
+                    <Lock className="ml-2 h-4 w-4 text-gray-400" />
+                  )}
                 </CardTitle>
-                <div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileUpload}
-                    className="hidden"
-                    id="image-upload"
-                    disabled={uploading}
-                  />
-                  <label htmlFor="image-upload">
-                    <Button disabled={uploading} size="sm" asChild>
-                      <span>
-                        <Upload className="mr-2 h-4 w-4" />
-                        {uploading ? 'Upload...' : 'Ajouter'}
-                      </span>
-                    </Button>
-                  </label>
-                </div>
+                {canEdit && (
+                  <div>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                      id="image-upload"
+                      disabled={uploading}
+                    />
+                    <label htmlFor="image-upload">
+                      <Button disabled={uploading} size="sm" asChild>
+                        <span>
+                          <Upload className="mr-2 h-4 w-4" />
+                          {uploading ? 'Upload...' : 'Ajouter'}
+                        </span>
+                      </Button>
+                    </label>
+                  </div>
+                )}
               </div>
+              {!permissionLoading && !canEdit && (
+                <p className="text-sm text-gray-600">
+                  Vous ne pouvez pas ajouter d'images à cet examen
+                </p>
+              )}
             </CardHeader>
             <CardContent>
               {images.length === 0 ? (
@@ -445,23 +473,42 @@ export default function RadiologueExamDetail() {
                 <CardTitle className="flex items-center">
                   <CheckCircle className="mr-2 h-5 w-5" />
                   Analyse radiologique
+                  {!permissionLoading && !canEdit && (
+                    <Lock className="ml-2 h-4 w-4 text-gray-400" />
+                  )}
                 </CardTitle>
+                {!permissionLoading && !canEdit && (
+                  <p className="text-sm text-gray-600">
+                    Vous n'avez pas les permissions pour modifier cet examen
+                  </p>
+                )}
               </CardHeader>
               <CardContent className="space-y-4">
-                <Textarea
-                  placeholder="Entrez votre analyse radiologique..."
-                  value={analysisResult}
-                  onChange={(e) => setAnalysisResult(e.target.value)}
-                  rows={4}
-                />
-                <Button 
-                  onClick={markAsAnalyzed}
-                  disabled={!analysisResult.trim()}
-                  className="w-full"
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Marquer comme analysé
-                </Button>
+                {canEdit ? (
+                  <>
+                    <Textarea
+                      placeholder="Entrez votre analyse radiologique..."
+                      value={analysisResult}
+                      onChange={(e) => setAnalysisResult(e.target.value)}
+                      rows={4}
+                    />
+                    <Button 
+                      onClick={markAsAnalyzed}
+                      disabled={!analysisResult.trim()}
+                      className="w-full"
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Marquer comme analysé
+                    </Button>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <Lock className="mx-auto h-12 w-12 text-gray-300 mb-4" />
+                    <p className="text-gray-500">
+                      Lecture seule - Vous ne pouvez pas modifier cet examen
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}
@@ -473,7 +520,15 @@ export default function RadiologueExamDetail() {
                 <CardTitle className="flex items-center">
                   <MessageSquare className="mr-2 h-5 w-5" />
                   Discussion - {selectedImage.description}
+                  {!permissionLoading && !canEdit && (
+                    <Lock className="ml-2 h-4 w-4 text-gray-400" />
+                  )}
                 </CardTitle>
+                {!permissionLoading && !canEdit && (
+                  <p className="text-sm text-gray-600">
+                    Vous ne pouvez pas participer à cette discussion
+                  </p>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -507,21 +562,29 @@ export default function RadiologueExamDetail() {
                   </div>
 
                   {/* Message Input */}
-                  <div className="flex space-x-2">
-                    <Input
-                      placeholder="Tapez votre message..."
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => {
-                        if (e.key === 'Enter') {
-                          sendMessage();
-                        }
-                      }}
-                    />
-                    <Button onClick={sendMessage} disabled={!newMessage.trim()}>
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  {canEdit ? (
+                    <div className="flex space-x-2">
+                      <Input
+                        placeholder="Tapez votre message..."
+                        value={newMessage}
+                        onChange={(e) => setNewMessage(e.target.value)}
+                        onKeyPress={(e) => {
+                          if (e.key === 'Enter') {
+                            sendMessage();
+                          }
+                        }}
+                      />
+                      <Button onClick={sendMessage} disabled={!newMessage.trim()}>
+                        <Send className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="text-center py-4">
+                      <p className="text-gray-500 text-sm">
+                        Lecture seule - Vous ne pouvez pas envoyer de messages
+                      </p>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>

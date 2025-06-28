@@ -42,12 +42,12 @@ export default function ReceptionnistePatientsPage() {
     nom: "",
     prenom: "",
     dateNaissance: "",
-    genre: "M",
+    genre: "M" as const,
     adresse: "",
     telephone: "",
     email: "",
     groupeSanguin: "A+",
-    dossierMedical: { etatDossier: "ACTIF" },
+    dossierMedical: { etatDossier: "ACTIF" as const },
   };
   const [form, setForm] = useState(initialForm);
   const [loadingForm, setLoadingForm] = useState(false);
@@ -61,7 +61,9 @@ export default function ReceptionnistePatientsPage() {
         ...prev,
         dossierMedical: {
           ...prev.dossierMedical,
-          [name.split(".")[1]]: value,
+          [name.split(".")[1]]: name.split(".")[1] === "etatDossier" 
+            ? (value as 'ACTIF' | 'INACTIF' | 'ARCHIVE')
+            : value,
         },
       }));
     } else {

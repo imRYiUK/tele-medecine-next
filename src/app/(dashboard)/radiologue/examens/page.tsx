@@ -17,11 +17,13 @@ import {
   Clock,
   CheckCircle,
   AlertTriangle,
-  Plus
+  Plus,
+  Lock
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { api } from "@/lib/api";
+import { radiologistApi } from "@/lib/api/radiologist";
 
 interface Exam {
   id: string;
@@ -41,6 +43,7 @@ interface Exam {
   resultat?: string;
   nombreImages: number;
   nombreRadiologues: number;
+  canEdit?: boolean;
 }
 
 export default function RadiologueExams() {
@@ -71,26 +74,59 @@ export default function RadiologueExams() {
       if (searchTerm) params.append('search', searchTerm);
 
       const response = await api.get(`/examens-medicaux/liste-avec-images?${params}`);
-      const mappedExams = response.data.map((exam: any) => ({
-        id: exam.examenID,
-        patient: {
-          nom: exam.patientNom,
-          prenom: exam.patientPrenom,
-          dateNaissance: '', // Not provided
-        },
-        typeExamen: {
-          nom: exam.typeExamenNom,
-          categorie: exam.typeExamenCategorie,
-        },
-        dateExamen: exam.dateExamen,
-        statut: exam.estAnalyse ? 'ANALYSE' : 'EN_ATTENTE',
-        urgent: false, // Not provided
-        description: exam.description,
-        resultat: exam.resultat,
-        nombreImages: exam.nombreImages,
-        nombreRadiologues: Math.max(exam.nombreRadiologues, 1),
-      }));
-      setExams(mappedExams);
+      
+      // Check permissions for each exam
+      const examsWithPermissions = await Promise.all(
+        response.data.map(async (exam: any) => {
+          try {
+            const canEdit = await radiologistApi.canEditExam(exam.examenID);
+            return {
+              id: exam.examenID,
+              patient: {
+                nom: exam.patientNom,
+                prenom: exam.patientPrenom,
+                dateNaissance: '', // Not provided
+              },
+              typeExamen: {
+                nom: exam.typeExamenNom,
+                categorie: exam.typeExamenCategorie,
+              },
+              dateExamen: exam.dateExamen,
+              statut: exam.estAnalyse ? 'ANALYSE' : 'EN_ATTENTE',
+              urgent: false, // Not provided
+              description: exam.description,
+              resultat: exam.resultat,
+              nombreImages: exam.nombreImages,
+              nombreRadiologues: Math.max(exam.nombreRadiologues, 1),
+              canEdit,
+            };
+          } catch (error) {
+            console.error(`Error checking permissions for exam ${exam.examenID}:`, error);
+            return {
+              id: exam.examenID,
+              patient: {
+                nom: exam.patientNom,
+                prenom: exam.patientPrenom,
+                dateNaissance: '',
+              },
+              typeExamen: {
+                nom: exam.typeExamenNom,
+                categorie: exam.typeExamenCategorie,
+              },
+              dateExamen: exam.dateExamen,
+              statut: exam.estAnalyse ? 'ANALYSE' : 'EN_ATTENTE',
+              urgent: false,
+              description: exam.description,
+              resultat: exam.resultat,
+              nombreImages: exam.nombreImages,
+              nombreRadiologues: Math.max(exam.nombreRadiologues, 1),
+              canEdit: false, // Default to false if permission check fails
+            };
+          }
+        })
+      );
+      
+      setExams(examsWithPermissions);
     } catch (error) {
       console.error('Error fetching exams:', error);
     } finally {
@@ -292,11 +328,18 @@ export default function RadiologueExams() {
                           Voir
                         </Button>
                       </Link>
-                      <Link href={`/radiologue/examens/${exam.id}/edit`}>
-                        <Button variant="ghost" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                      </Link>
+                      {exam.canEdit ? (
+                        <Link href={`/radiologue/examens/${exam.id}/edit`}>
+                          <Button variant="ghost" size="sm">
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </Link>
+                      ) : (
+                        <div className="flex items-center space-x-1 text-gray-400 text-xs">
+                          <Lock className="h-3 w-3" />
+                          <span>Lecture seule</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

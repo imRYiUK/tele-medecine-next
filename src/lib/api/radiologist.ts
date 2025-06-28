@@ -109,6 +109,9 @@ export const radiologistApi = {
   getExamen: (id: string): Promise<ExamenMedical> => 
     api.get(`/examens-medicaux/${id}`).then((res: any) => res.data),
 
+  canEditExam: (examenID: string): Promise<boolean> => 
+    api.get(`/examens-medicaux/${examenID}/can-edit`).then((res: any) => res.data),
+
   markAsAnalyzed: (examenID: string, resultat: string): Promise<ExamenMedical> => 
     api.put(`/examens-medicaux/${examenID}/marquer-analyse`, { resultat }).then((res: any) => res.data),
 
@@ -125,8 +128,20 @@ export const radiologistApi = {
   inviteToImage: (imageID: string, inviteeID: string): Promise<any> => 
     api.post(`/examen-medical/images/${imageID}/invite`, { inviteeID }).then((res: any) => res.data),
 
+  inviteToImageBySopInstanceUID: (sopInstanceUID: string, inviteeID: string): Promise<any> => 
+    api.post(`/examen-medical/images/sop/${sopInstanceUID}/invite`, { inviteeID }).then((res: any) => res.data),
+
   getImageCollaborators: (imageID: string): Promise<Utilisateur[]> => 
     api.get(`/examen-medical/images/${imageID}/collaborators`).then((res: any) => res.data),
+
+  getImageCollaboratorsBySopInstanceUID: (sopInstanceUID: string): Promise<Utilisateur[]> => 
+    api.get(`/examen-medical/images/sop/${sopInstanceUID}/collaborators`).then((res: any) => res.data),
+
+  getPendingCollaborationsForImage: (imageID: string): Promise<any[]> => 
+    api.get(`/examen-medical/images/${imageID}/pending-collaborations`).then((res: any) => res.data),
+
+  getPendingCollaborationsForImageBySopInstanceUID: (sopInstanceUID: string): Promise<any[]> => 
+    api.get(`/examen-medical/images/sop/${sopInstanceUID}/pending-collaborations`).then((res: any) => res.data),
 
   // Messages
   getImageMessages: (imageID: string): Promise<ChatMessage[]> => 

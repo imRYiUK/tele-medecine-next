@@ -14,6 +14,9 @@ export interface Etablissement {
   createdAt: string;
   updatedAt: string;
   utilisateursCount?: number;
+  orthancUrl?: string;
+  orthancLogin?: string;
+  orthancPassword?: string;
 }
 
 export interface CreateEtablissementDto {
@@ -26,9 +29,25 @@ export interface CreateEtablissementDto {
   description?: string;
   siteWeb?: string;
   estActif?: boolean;
+  orthancUrl?: string;
+  orthancLogin?: string;
+  orthancPassword?: string;
 }
 
-export interface UpdateEtablissementDto extends Partial<CreateEtablissementDto> {}
+export interface UpdateEtablissementDto {
+  nom?: string;
+  type?: string;
+  region?: string;
+  adresse?: string;
+  telephone?: string;
+  email?: string;
+  description?: string;
+  siteWeb?: string;
+  estActif?: boolean;
+  orthancUrl?: string;
+  orthancLogin?: string;
+  orthancPassword?: string;
+}
 
 export const etablissementsService = {
   async getAll(): Promise<Etablissement[]> {

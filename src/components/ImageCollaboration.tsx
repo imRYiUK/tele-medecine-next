@@ -17,6 +17,7 @@ import {
   AlertCircle
 } from "lucide-react";
 import { api } from "@/lib/api";
+import { radiologistApi } from "@/lib/api/radiologist";
 
 interface Collaborator {
   utilisateurID: string;
@@ -74,10 +75,11 @@ interface Collaboration {
 
 interface ImageCollaborationProps {
   imageId: string;
+  sopInstanceUID?: string;
   currentUserId: string;
 }
 
-export default function ImageCollaboration({ imageId, currentUserId }: ImageCollaborationProps) {
+export default function ImageCollaboration({ imageId, sopInstanceUID, currentUserId }: ImageCollaborationProps) {
   const [collaborators, setCollaborators] = useState<Collaborator[]>([]);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -110,8 +112,14 @@ export default function ImageCollaboration({ imageId, currentUserId }: ImageColl
 
   const loadCollaborators = async () => {
     try {
-      const response = await api.get(`/examen-medical/images/${imageId}/collaborators`);
-      setCollaborators(response.data?.data || response.data || []);
+      // Use the new SOP-based endpoint if sopInstanceUID is available, otherwise fall back to imageId
+      if (sopInstanceUID) {
+        const response = await radiologistApi.getImageCollaboratorsBySopInstanceUID(sopInstanceUID);
+        setCollaborators(response || []);
+      } else {
+        const response = await api.get(`/examen-medical/images/${imageId}/collaborators`);
+        setCollaborators(response.data?.data || response.data || []);
+      }
     } catch (error) {
       console.error('Error loading collaborators:', error);
       setError('Failed to load collaborators');
@@ -132,11 +140,18 @@ export default function ImageCollaboration({ imageId, currentUserId }: ImageColl
 
   const loadPendingCollaborations = async () => {
     try {
-      const response = await api.get('/examen-medical/images/user/pending-collaborations');
-      const pending = response.data?.data || response.data || [];
-      // Filter for current image
-      const imagePending = pending.filter((collab: Collaboration) => collab.imageID === imageId);
-      setPendingCollaborations(imagePending);
+      // Use the new SOP-based endpoint if sopInstanceUID is available, otherwise fall back to the old method
+      if (sopInstanceUID) {
+        const response = await radiologistApi.getPendingCollaborationsForImageBySopInstanceUID(sopInstanceUID);
+        setPendingCollaborations(response || []);
+      } else {
+        // Fallback to the old method - get all pending and filter for current image
+        const response = await api.get('/examen-medical/images/user/pending-collaborations');
+        const pending = response.data?.data || response.data || [];
+        // Filter for current image
+        const imagePending = pending.filter((collab: Collaboration) => collab.imageID === imageId);
+        setPendingCollaborations(imagePending);
+      }
     } catch (error) {
       console.error('Error loading pending collaborations:', error);
     }
@@ -196,7 +211,7 @@ export default function ImageCollaboration({ imageId, currentUserId }: ImageColl
     try {
       setIsInviting(true);
       // First, we need to find the user by email
-      const userResponse = await api.get(`/utilisateurs/search?email=${inviteEmail.trim()}`);
+      const userResponse = await api.get(`/users/search?q=${inviteEmail.trim()}`);
       const user = userResponse.data?.data || userResponse.data;
       
       if (!user) {
@@ -204,10 +219,13 @@ export default function ImageCollaboration({ imageId, currentUserId }: ImageColl
         return;
       }
 
-      // Then invite them to collaborate
-      await api.post(`/examen-medical/images/${imageId}/invite`, {
-        inviteeID: user.utilisateurID
-      });
+      // Use the new SOP-based endpoint if sopInstanceUID is available, otherwise fall back to imageId
+      if (sopInstanceUID) {
+        await radiologistApi.inviteToImageBySopInstanceUID(sopInstanceUID, user.utilisateurID);
+      } else {
+        // Fallback to the old imageId-based endpoint
+        await radiologistApi.inviteToImage(imageId, user.utilisateurID);
+      }
 
       setInviteEmail("");
       await loadPendingCollaborations();
@@ -404,14 +422,14 @@ export default function ImageCollaboration({ imageId, currentUserId }: ImageColl
                     <div className="flex items-center space-x-3">
                       <div className="w-8 h-8 bg-orange-100 rounded-full flex items-center justify-center">
                         <span className="text-orange-600 font-medium text-sm">
-                          {collaboration.inviter.prenom[0]}{collaboration.inviter.nom[0]}
+                          {collaboration.invitee.prenom[0]}{collaboration.invitee.nom[0]}
                         </span>
                       </div>
                       <div>
                         <div className="font-medium">
-                          {collaboration.inviter.prenom} {collaboration.inviter.nom}
+                          {collaboration.invitee.prenom} {collaboration.invitee.nom}
                         </div>
-                        <div className="text-sm text-gray-500">{collaboration.inviter.email}</div>
+                        <div className="text-sm text-gray-500">{collaboration.invitee.email}</div>
                       </div>
                     </div>
                     <Badge variant="outline" className="bg-orange-50 text-orange-700">

@@ -118,6 +118,7 @@ export default function EstablishmentsPage() {
               <TableHead>Adresse</TableHead>
               <TableHead>Téléphone</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Orthanc</TableHead>
               <TableHead>Statut</TableHead>
               <TableHead>Utilisateurs</TableHead>
               <TableHead>Créé le</TableHead>
@@ -127,13 +128,13 @@ export default function EstablishmentsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8">
+                <TableCell colSpan={11} className="text-center py-8">
                   <Loader2 className="mx-auto animate-spin" />
                 </TableCell>
               </TableRow>
             ) : paginatedEtabs.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={10} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={11} className="text-center py-8 text-gray-500">
                   Aucun établissement trouvé.
                 </TableCell>
               </TableRow>
@@ -146,6 +147,15 @@ export default function EstablishmentsPage() {
                   <TableCell className="max-w-xs truncate" title={e.adresse}>{e.adresse}</TableCell>
                   <TableCell>{e.telephone}</TableCell>
                   <TableCell>{e.email}</TableCell>
+                  <TableCell>
+                    {e.orthancUrl ? (
+                      <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">
+                        Configuré
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Non configuré</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Switch
