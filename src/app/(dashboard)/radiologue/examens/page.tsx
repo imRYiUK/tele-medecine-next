@@ -22,7 +22,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { api } from "@/lib/api";
 import { radiologistApi } from "@/lib/api/radiologist";
 
 interface Exam {
@@ -68,16 +67,16 @@ export default function RadiologueExams() {
   const fetchExams = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-      if (statusFilter !== "TOUS") params.append('status', statusFilter);
-      if (categoryFilter !== "ALL") params.append('category', categoryFilter);
-      if (searchTerm) params.append('search', searchTerm);
+      const params: any = {};
+      if (statusFilter !== "TOUS") params.status = statusFilter;
+      if (categoryFilter !== "ALL") params.category = categoryFilter;
+      if (searchTerm) params.search = searchTerm;
 
-      const response = await api.get(`/examens-medicaux/liste-avec-images?${params}`);
+      const response = await radiologistApi.getRadiologistExamens(params);
       
       // Check permissions for each exam
       const examsWithPermissions = await Promise.all(
-        response.data.map(async (exam: any) => {
+        response.map(async (exam: any) => {
           try {
             const canEdit = await radiologistApi.canEditExam(exam.examenID);
             return {

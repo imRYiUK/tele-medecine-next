@@ -236,7 +236,7 @@ export default function CollaborationsPage() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <Link href={`/radiologue/dicom/series/${collaboration.imageID}`}>
+                      <Link href={`/radiologue/dicom/image/${collaboration.image.sopInstanceUID}`}>
                         <Button variant="outline" size="sm">
                           <Eye className="mr-2 h-4 w-4" />
                           Voir l'image
@@ -326,13 +326,13 @@ export default function CollaborationsPage() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <Link href={`/radiologue/dicom/series/${collaboration.imageID}`}>
+                      <Link href={`/radiologue/dicom/image/${collaboration.image.sopInstanceUID}`}>
                         <Button variant="outline" size="sm">
                           <Eye className="mr-2 h-4 w-4" />
                           Voir l'image
                         </Button>
                       </Link>
-                      <Link href={`/radiologue/dicom/series/${collaboration.imageID}`}>
+                      <Link href={`/radiologue/dicom/image/${collaboration.image.sopInstanceUID}`}>
                         <Button size="sm">
                           <MessageSquare className="mr-2 h-4 w-4" />
                           Chat
@@ -392,7 +392,7 @@ export default function CollaborationsPage() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <Link href={`/radiologue/dicom/series/${collaboration.imageID}`}>
+                      <Link href={`/radiologue/dicom/image/${collaboration.image.sopInstanceUID}`}>
                         <Button variant="outline" size="sm">
                           <Eye className="mr-2 h-4 w-4" />
                           Voir l'image
