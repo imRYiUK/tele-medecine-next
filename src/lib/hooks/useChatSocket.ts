@@ -27,6 +27,7 @@ interface UseChatSocketProps {
   onError?: (error: string) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
+  enabled?: boolean;
 }
 
 export const useChatSocket = ({
@@ -39,6 +40,7 @@ export const useChatSocket = ({
   onError,
   onConnected,
   onDisconnected,
+  enabled = true,
 }: UseChatSocketProps) => {
   const { user } = useAuth();
   const socketRef = useRef<Socket | null>(null);
@@ -64,6 +66,12 @@ export const useChatSocket = ({
 
   // Initialize socket connection
   useEffect(() => {
+    // Don't establish connection if disabled
+    if (!enabled) {
+      console.log('WebSocket connection disabled');
+      return;
+    }
+
     if (!token || isConnectingRef.current) return;
 
     isConnectingRef.current = true;
@@ -181,11 +189,11 @@ export const useChatSocket = ({
       isConnectingRef.current = false;
       socket.disconnect();
     };
-  }, [token, stableOnNewMessage, stableOnUserTyping, stableOnUserJoined, stableOnUserLeft, stableOnOnlineUsers, stableOnError, stableOnConnected, stableOnDisconnected]);
+  }, [token, enabled, stableOnNewMessage, stableOnUserTyping, stableOnUserJoined, stableOnUserLeft, stableOnOnlineUsers, stableOnError, stableOnConnected, stableOnDisconnected]);
 
   // Join image room
   const joinImageRoom = useCallback(async () => {
-    if (!socketRef.current || !isConnected) return;
+    if (!enabled || !socketRef.current || !isConnected) return;
 
     try {
       setIsJoining(true);
@@ -195,22 +203,22 @@ export const useChatSocket = ({
       stableOnError('Failed to join image room');
       setIsJoining(false);
     }
-  }, [imageID, isConnected, stableOnError]);
+  }, [imageID, isConnected, enabled, stableOnError]);
 
   // Leave image room
   const leaveImageRoom = useCallback(async () => {
-    if (!socketRef.current) return;
+    if (!enabled || !socketRef.current) return;
 
     try {
       socketRef.current.emit('leaveImageRoom', { imageID });
     } catch (error) {
       console.error('Error leaving image room:', error);
     }
-  }, [imageID]);
+  }, [imageID, enabled]);
 
   // Send message
   const sendMessage = useCallback(async (content: string) => {
-    if (!socketRef.current || !isConnected) {
+    if (!enabled || !socketRef.current || !isConnected) {
       throw new Error('Not connected to chat server');
     }
 
@@ -241,37 +249,37 @@ export const useChatSocket = ({
       // Send the message
       socketRef.current!.emit('sendMessage', { imageID, content });
     });
-  }, [imageID, isConnected]);
+  }, [imageID, isConnected, enabled]);
 
   // Send typing indicator
   const sendTypingIndicator = useCallback((isTyping: boolean) => {
-    if (!socketRef.current || !isConnected) return;
+    if (!enabled || !socketRef.current || !isConnected) return;
 
     socketRef.current.emit('typing', { imageID, isTyping });
-  }, [imageID, isConnected]);
+  }, [imageID, isConnected, enabled]);
 
   // Get online users
   const getOnlineUsers = useCallback(() => {
-    if (!socketRef.current || !isConnected) return;
+    if (!enabled || !socketRef.current || !isConnected) return;
 
     socketRef.current.emit('getOnlineUsers', { imageID });
-  }, [imageID, isConnected]);
+  }, [imageID, isConnected, enabled]);
 
   // Auto-join room when connected and imageID changes
   useEffect(() => {
-    if (isConnected && imageID) {
+    if (enabled && isConnected && imageID) {
       joinImageRoom();
     }
-  }, [isConnected, imageID, joinImageRoom]);
+  }, [isConnected, imageID, joinImageRoom, enabled]);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (socketRef.current) {
+      if (enabled && socketRef.current) {
         leaveImageRoom();
       }
     };
-  }, [leaveImageRoom]);
+  }, [leaveImageRoom, enabled]);
 
   return {
     isConnected,

@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { 
   Users, 
   UserPlus, 
@@ -16,7 +17,8 @@ import {
   CheckCircle,
   AlertCircle,
   Wifi,
-  WifiOff
+  WifiOff,
+  Info
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { radiologistApi } from "@/lib/api/radiologist";
@@ -99,7 +101,11 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // WebSocket chat hook
+  // Check if there are multiple collaborators (more than just the current user)
+  const hasMultipleCollaborators = collaborators.length > 1 || 
+    (collaborators.length === 1 && collaborators[0].utilisateurID !== currentUserId);
+
+  // WebSocket chat hook - only use when there are multiple collaborators
   const {
     isConnected,
     isJoining,
@@ -124,6 +130,8 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     onError: (error) => {
       setError(error);
     },
+    // Only enable WebSocket if there are multiple collaborators
+    enabled: hasMultipleCollaborators,
   });
 
   useEffect(() => {
@@ -154,6 +162,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
       }
     } catch (error) {
       console.error('Error loading collaborators:', error);
+      toast.error("Erreur lors du chargement des collaborateurs");
       setError('Failed to load collaborators');
     }
   };
@@ -164,6 +173,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
       setMessages(response.data?.data || response.data || []);
     } catch (error) {
       console.error('Error loading messages:', error);
+      toast.error("Erreur lors du chargement des messages");
       setError('Failed to load messages');
     } finally {
       setLoading(false);
@@ -183,6 +193,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
       }
     } catch (error) {
       console.error('Error loading pending collaborations:', error);
+      toast.error("Erreur lors du chargement des invitations en attente");
     }
   };
 
@@ -190,11 +201,13 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     try {
       setIsAccepting(collaborationId);
       await api.post(`/examen-medical/images/collaborations/${collaborationId}/accept`);
+      toast.success("Collaboration acceptée avec succès");
       await loadCollaborators();
       await loadPendingCollaborations();
       setActiveTab('collaborators');
     } catch (error) {
       console.error('Error accepting collaboration:', error);
+      toast.error("Erreur lors de l'acceptation de la collaboration");
       setError('Failed to accept collaboration');
     } finally {
       setIsAccepting(null);
@@ -205,9 +218,11 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     try {
       setIsRejecting(collaborationId);
       await api.post(`/examen-medical/images/collaborations/${collaborationId}/reject`);
+      toast.success("Collaboration rejetée");
       await loadPendingCollaborations();
     } catch (error) {
       console.error('Error rejecting collaboration:', error);
+      toast.error("Erreur lors du rejet de la collaboration");
       setError('Failed to reject collaboration');
     } finally {
       setIsRejecting(null);
@@ -220,12 +235,13 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     try {
       setIsSending(true);
       
-      if (isConnected) {
+      // If there are multiple collaborators, use WebSocket if connected, otherwise fallback to REST
+      if (hasMultipleCollaborators && isConnected) {
         // Use WebSocket for real-time messaging
         await sendSocketMessage(newMessage.trim());
         setNewMessage("");
       } else {
-        // Fallback to REST API if WebSocket is not connected
+        // Fallback to REST API if WebSocket is not connected or if single collaborator
         const response = await api.post(`/examen-medical/images/${imageId}/messages`, {
           content: newMessage.trim()
         });
@@ -236,6 +252,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
       }
     } catch (error) {
       console.error('Error sending message:', error);
+      toast.error("Erreur lors de l'envoi du message");
       setError('Failed to send message');
     } finally {
       setIsSending(false);
@@ -246,8 +263,8 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     const value = e.target.value;
     setNewMessage(value);
     
-    // Send typing indicator
-    if (isConnected) {
+    // Send typing indicator only if there are multiple collaborators and WebSocket is connected
+    if (hasMultipleCollaborators && isConnected) {
       sendTypingIndicator(true);
       
       // Clear previous timeout
@@ -272,7 +289,15 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
       const user = userResponse.data?.data || userResponse.data;
       
       if (!user) {
+        toast.error("Utilisateur non trouvé avec cet email");
         setError('User not found with this email');
+        return;
+      }
+
+      // Check if the user is a radiologist
+      if (user.role !== 'RADIOLOGUE') {
+        toast.error("Vous ne pouvez inviter que des radiologues à collaborer");
+        setError('You can only invite radiologists to collaborate');
         return;
       }
 
@@ -284,6 +309,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
         await radiologistApi.inviteToImage(imageId, user.utilisateurID);
       }
 
+      toast.success(`Invitation envoyée à ${user.prenom} ${user.nom}`);
       setInviteEmail("");
       await loadPendingCollaborations();
       setActiveTab('pending');
@@ -375,7 +401,12 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
         
         {/* Connection Status Indicator */}
         <div className="flex items-center space-x-2">
-          {isConnected ? (
+          {!hasMultipleCollaborators ? (
+            <div className="flex items-center text-gray-500 text-sm">
+              <WifiOff className="h-4 w-4 mr-1" />
+              Mode solo
+            </div>
+          ) : isConnected ? (
             <div className="flex items-center text-green-600 text-sm">
               <Wifi className="h-4 w-4 mr-1" />
               Connecté
@@ -408,6 +439,15 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
         {/* Chat Tab */}
         {activeTab === 'chat' && (
           <div className="flex flex-col h-full space-y-4">
+            {!hasMultipleCollaborators && (
+              <div className="flex items-center p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <Info className="h-4 w-4 text-blue-600 mr-2" />
+                <span className="text-blue-600 text-sm">
+                  Mode solo activé - Invitez d'autres collaborateurs pour activer le chat en temps réel
+                </span>
+              </div>
+            )}
+            
             <div className="flex-1 min-h-0 max-h-96 overflow-y-auto border rounded-lg p-4 space-y-3">
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
@@ -468,13 +508,18 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
 
             <div className="flex space-x-2">
               <Input
-                placeholder="Tapez votre message..."
+                placeholder={hasMultipleCollaborators ? "Tapez votre message..." : "Mode solo - Invitez des collaborateurs pour discuter"}
                 value={newMessage}
                 onChange={handleMessageInput}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
-                disabled={isSending}
+                disabled={isSending || !hasMultipleCollaborators}
+                className={!hasMultipleCollaborators ? "bg-gray-100" : ""}
               />
-              <Button onClick={sendMessage} disabled={isSending || !newMessage.trim()}>
+              <Button 
+                onClick={sendMessage} 
+                disabled={isSending || !newMessage.trim() || !hasMultipleCollaborators}
+                className={!hasMultipleCollaborators ? "bg-gray-400 cursor-not-allowed" : ""}
+              >
                 {isSending ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
                 ) : (
