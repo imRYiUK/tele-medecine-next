@@ -535,9 +535,12 @@ export default function ReceptionnisteRendezVousPage() {
               
               const isOverlapping = overlappingEvents.length > 1;
               
+              const colors = ['#059669', '#f59e0b', '#ef4444', '#8b5cf6', '#e879f9', '#fbbf24'];
+              const colorIndex = overlappingEvents.indexOf(event);
+              
               return {
                 style: {
-                  backgroundColor: isOverlapping ? '#f59e0b' : '#059669', // Orange for overlapping, green for single
+                  backgroundColor: isOverlapping ? colors[colorIndex % colors.length] : '#059669',
                   borderRadius: 8,
                   color: 'white',
                   border: 'none',
