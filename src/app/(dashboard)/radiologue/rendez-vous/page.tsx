@@ -131,6 +131,8 @@ export default function RadiologueRendezVousPage() {
                         onSelectEvent={handleSelectEvent}
                         onSelectSlot={handleSelectSlot}
                         selectable
+                        min={new Date(1970, 1, 1, 8, 0)}
+                        max={new Date(1970, 1, 1, 21, 0)}
                         messages={{
                             next: "Suivant",
                             previous: "Précédent",
