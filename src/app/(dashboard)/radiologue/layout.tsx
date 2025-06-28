@@ -24,6 +24,7 @@ import NotificationWidget from "@/components/NotificationWidget";
 const navigation = [
   { name: "Dashboard", href: "/radiologue", icon: Activity },
   { name: "Examens", href: "/radiologue/examens", icon: FileText },
+  { name: "Rendez-vous", href: "/radiologue/rendez-vous", icon: Calendar },
   { name: "Images DICOM", href: "/radiologue/dicom", icon: Database },
   { name: "Collaborations", href: "/radiologue/collaborations", icon: MessageSquare },
   { name: "Profil", href: "/radiologue/profile", icon: User },

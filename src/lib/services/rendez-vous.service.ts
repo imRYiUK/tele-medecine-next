@@ -43,5 +43,9 @@ export const rendezVousService = {
     const res = await api.get(`/rendez-vous/medecin/${medecinID}`);
     return res.data;
   },
+  async getByRadiologue(radiologueID: string): Promise<RendezVous[]> {
+    const res = await api.get(`/rendez-vous/radiologue/${radiologueID}`);
+    return res.data;
+  },
   // Ajouter d'autres méthodes si besoin (getById, update, remove)
 }; 
