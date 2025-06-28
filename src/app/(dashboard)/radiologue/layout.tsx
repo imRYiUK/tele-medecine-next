@@ -19,6 +19,7 @@ import {
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import NotificationWidget from "@/components/NotificationWidget";
 
 const navigation = [
   { name: "Dashboard", href: "/radiologue", icon: Activity },
@@ -142,7 +143,8 @@ export default function RadiologueLayout({
             </button>
             <div className="flex flex-1 justify-between px-4">
               <div className="flex flex-1"></div>
-              <div className="ml-4 flex items-center md:ml-6">
+              <div className="ml-4 flex items-center md:ml-6 space-x-4">
+                <NotificationWidget />
                 <div className="flex items-center">
                   <span className="text-sm font-medium text-gray-700">
                     {user?.prenom} {user?.nom}

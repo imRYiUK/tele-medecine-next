@@ -408,7 +408,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
         {/* Chat Tab */}
         {activeTab === 'chat' && (
           <div className="flex flex-col h-full space-y-4">
-            <div className="flex-1 min-h-0 overflow-y-auto border rounded-lg p-4 space-y-3">
+            <div className="flex-1 min-h-0 max-h-96 overflow-y-auto border rounded-lg p-4 space-y-3">
               {messages.length === 0 ? (
                 <div className="text-center text-gray-500 py-8">
                   <MessageSquare className="h-8 w-8 mx-auto mb-2 text-gray-300" />
@@ -416,40 +416,54 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
                   <p className="text-sm">Commencez la conversation !</p>
                 </div>
               ) : (
-                messages.map((message) => (
-                  <div
-                    key={message.messageID}
-                    className={`flex ${message.sender.utilisateurID === currentUserId ? 'justify-end' : 'justify-start'}`}
-                  >
+                <>
+                  {messages.map((message) => (
                     <div
-                      className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
+                      key={message.messageID}
+                      className={`flex ${
                         message.sender.utilisateurID === currentUserId
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-gray-100 text-gray-900'
+                          ? 'justify-end'
+                          : 'justify-start'
                       }`}
                     >
-                      <div className="text-xs opacity-75 mb-1">
-                        {message.sender.prenom} {message.sender.nom}
-                      </div>
-                      <div className="text-sm">{message.content}</div>
-                      <div className="text-xs opacity-75 mt-1">
-                        {formatTimestamp(message.timestamp)}
+                      <div
+                        className={`max-w-xs lg:max-w-md px-3 py-2 rounded-lg ${
+                          message.sender.utilisateurID === currentUserId
+                            ? 'bg-blue-500 text-white'
+                            : 'bg-gray-100 text-gray-900'
+                        }`}
+                      >
+                        <div className="text-xs opacity-75 mb-1">
+                          {message.sender.prenom} {message.sender.nom}
+                        </div>
+                        <div className="text-sm">{message.content}</div>
+                        <div className="text-xs opacity-75 mt-1">
+                          {formatTimestamp(message.timestamp)}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))
+                  ))}
+                  
+                  {/* Typing indicators */}
+                  {Array.from(typingUsers).map((userId) => {
+                    const typingUser = collaborators.find(c => c.utilisateurID === userId);
+                    if (!typingUser || userId === currentUserId) return null;
+                    
+                    return (
+                      <div key={userId} className="flex justify-start">
+                        <div className="bg-gray-100 text-gray-900 px-3 py-2 rounded-lg">
+                          <div className="text-xs opacity-75 mb-1">
+                            {typingUser.prenom} {typingUser.nom}
+                          </div>
+                          <div className="text-sm italic">tape...</div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                  <div ref={messagesEndRef} />
+                </>
               )}
-              
-              {/* Typing Indicator */}
-              {getTypingIndicatorText() && (
-                <div className="flex justify-start">
-                  <div className="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm italic">
-                    {getTypingIndicatorText()}
-                  </div>
-                </div>
-              )}
-              
-              <div ref={messagesEndRef} />
             </div>
 
             <div className="flex space-x-2">

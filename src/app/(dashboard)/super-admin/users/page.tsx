@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { usersService, User } from "@/lib/services/users.service";
+import { useAuth } from "@/lib/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -23,6 +24,7 @@ const roles = [
 ];
 
 export default function UsersPage() {
+  const { user } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -41,7 +43,9 @@ export default function UsersPage() {
     setLoading(true);
     try {
       const data = await usersService.getAll();
-      setUsers(data);
+      // Filter out the current super admin user
+      const filtered = data.filter(u => u.utilisateurID !== user?.utilisateurID);
+      setUsers(filtered);
     } finally {
       setLoading(false);
     }
