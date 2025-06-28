@@ -12,6 +12,74 @@ import { notificationService, NotificationRecipient } from '@/lib/services/notif
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 
+// Helper function to safely parse dates
+const parseDate = (dateString: string | Date | number): Date => {
+  if (!dateString) {
+    return new Date();
+  }
+  
+  // If it's already a Date object, return it
+  if (dateString instanceof Date) {
+    return dateString;
+  }
+  
+  // If it's a number (timestamp), convert to Date
+  if (typeof dateString === 'number') {
+    return new Date(dateString);
+  }
+  
+  // Try parsing as ISO string first
+  const date = new Date(dateString);
+  
+  // Check if the date is valid
+  if (isNaN(date.getTime())) {
+    // If not valid, try parsing as timestamp string
+    const timestamp = parseInt(dateString, 10);
+    if (!isNaN(timestamp)) {
+      return new Date(timestamp);
+    }
+    
+    // Try parsing common date formats
+    const commonFormats = [
+      // MySQL datetime format
+      /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/,
+      // ISO format without timezone
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/,
+      // Date only
+      /^\d{4}-\d{2}-\d{2}$/,
+    ];
+    
+    for (const format of commonFormats) {
+      if (format.test(dateString)) {
+        const parsedDate = new Date(dateString);
+        if (!isNaN(parsedDate.getTime())) {
+          return parsedDate;
+        }
+      }
+    }
+    
+    // If all else fails, return current date
+    console.warn('Could not parse date string:', dateString);
+    return new Date();
+  }
+  
+  return date;
+};
+
+// Helper function to format date safely
+const formatDateSafely = (dateString: string | Date | number): string => {
+  try {
+    const date = parseDate(dateString);
+    return formatDistanceToNow(date, {
+      addSuffix: true,
+      locale: fr,
+    });
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return 'Récemment';
+  }
+};
+
 export default function NotificationWidget() {
   const [notifications, setNotifications] = useState<NotificationRecipient[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -98,6 +166,7 @@ export default function NotificationWidget() {
         notificationService.getLastNotifications(10),
         notificationService.getUnreadNotifications(),
       ]);
+      
       setNotifications(lastNotifications);
       setUnreadCount(unreadNotifications.length);
     } catch (error) {
@@ -290,10 +359,7 @@ export default function NotificationWidget() {
                               </p>
                               <div className="flex items-center justify-between mt-2">
                                 <span className="text-xs text-gray-500">
-                                  {formatDistanceToNow(new Date(notificationRecipient.notification.dateCreation), {
-                                    addSuffix: true,
-                                    locale: fr,
-                                  })}
+                                  {formatDateSafely(notificationRecipient.notification.dateCreation)}
                                 </span>
                                 <div className="flex items-center space-x-1">
                                   {notificationRecipient.notification.type && (
