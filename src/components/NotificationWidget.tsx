@@ -228,14 +228,22 @@ export default function NotificationWidget() {
 
   const handleNotificationClick = async (notification: NotificationRecipient) => {
     if (!notification.estLu) {
-      await handleMarkAsRead(notification.notificationID);
+      // Optimistically update UI
+      setNotifications(prev =>
+        prev.map(notif =>
+          notif.notificationID === notification.notificationID
+            ? { ...notif, estLu: true }
+            : notif
+        )
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+      // Send API request in background
+      handleMarkAsRead(notification.notificationID);
     }
     if (notification.notification.lien) {
       if (notification.notification.lien.startsWith('/')) {
-        // Internal link: use Next.js router
         router.push(notification.notification.lien);
       } else {
-        // External link: use normal navigation
         window.location.href = notification.notification.lien;
       }
     }
