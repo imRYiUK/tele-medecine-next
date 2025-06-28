@@ -535,12 +535,32 @@ export default function ReceptionnisteRendezVousPage() {
               
               const isOverlapping = overlappingEvents.length > 1;
               
-              const colors = ['#059669', '#f59e0b', '#ef4444', '#8b5cf6', '#e879f9', '#fbbf24'];
-              const colorIndex = overlappingEvents.indexOf(event);
+              // Define different colors for overlapping events
+              const overlapColors = [
+                '#f59e0b', // Orange
+                '#3b82f6', // Blue
+                '#8b5cf6', // Purple
+                '#ef4444', // Red
+                '#10b981', // Emerald
+                '#f97316', // Orange-500
+                '#06b6d4', // Cyan
+                '#84cc16', // Lime
+              ];
+              
+              let backgroundColor = '#059669'; // Default green for single events
+              
+              if (isOverlapping) {
+                // Find the index of this event in the overlapping events array
+                const eventIndex = overlappingEvents.findIndex(e => 
+                  e.resource.rendezVousID === event.resource.rendezVousID
+                );
+                // Use the color based on index, cycling through the colors if needed
+                backgroundColor = overlapColors[eventIndex % overlapColors.length];
+              }
               
               return {
                 style: {
-                  backgroundColor: isOverlapping ? colors[colorIndex % colors.length] : '#059669',
+                  backgroundColor,
                   borderRadius: 8,
                   color: 'white',
                   border: 'none',
@@ -548,7 +568,7 @@ export default function ReceptionnisteRendezVousPage() {
                   fontSize: 15,
                   paddingLeft: 8,
                   paddingRight: 8,
-                  opacity: isOverlapping ? 0.8 : 1,
+                  opacity: isOverlapping ? 0.9 : 1,
                 },
               };
             }}
@@ -563,8 +583,13 @@ export default function ReceptionnisteRendezVousPage() {
           <span>Rendez-vous unique</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-amber-500 rounded opacity-80"></div>
-          <span>Rendez-vous simultané (professionnels différents)</span>
+          <span>Rendez-vous simultané:</span>
+          <div className="flex gap-1">
+            <div className="w-3 h-3 bg-orange-500 rounded"></div>
+            <div className="w-3 h-3 bg-blue-500 rounded"></div>
+            <div className="w-3 h-3 bg-purple-500 rounded"></div>
+            <div className="w-3 h-3 bg-red-500 rounded"></div>
+          </div>
         </div>
       </div>
     </div>
