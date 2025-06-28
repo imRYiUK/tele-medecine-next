@@ -263,7 +263,7 @@ export default function RadiologueExamDetail() {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64 bg-gradient-to-br from-blue-50 to-white">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
       </div>
     );
@@ -271,28 +271,28 @@ export default function RadiologueExamDetail() {
 
   if (!exam) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12 bg-gradient-to-br from-blue-50 to-white">
         <p className="text-gray-500">Examen non trouvé</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-white py-8 px-2 sm:px-6 lg:px-12">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div className="flex items-center space-x-4">
           <Link href="/radiologue/examens">
-            <Button variant="ghost" size="sm">
+            <Button variant="outline" size="sm" className="rounded-full shadow-sm">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Retour
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight">
               Examen - {exam.patient.prenom} {exam.patient.nom}
             </h1>
-            <p className="text-gray-600">{exam.typeExamen.nom}</p>
+            <p className="text-blue-700 font-medium">{exam.typeExamen.nom}</p>
           </div>
         </div>
         <div className="flex items-center space-x-2">
@@ -300,108 +300,89 @@ export default function RadiologueExamDetail() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Exam Details */}
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
+        <div className="lg:col-span-1 space-y-8">
+          <Card className="shadow-md border-0">
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="mr-2 h-5 w-5" />
+              <CardTitle className="flex items-center text-blue-800 text-lg font-semibold">
+                <User className="mr-2 h-5 w-5 text-blue-400" />
                 Informations patient
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Nom complet</label>
-                <p className="text-sm text-gray-900">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Nom complet</label>
+                <p className="text-base text-gray-900 font-medium">
                   {exam.patient.prenom} {exam.patient.nom}
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Âge</label>
-                <p className="text-sm text-gray-900">
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Âge</label>
+                <p className="text-base text-gray-900 font-medium">
                   {calculateAge(exam.patient.dateNaissance)} ans
                 </p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Téléphone</label>
-                <p className="text-sm text-gray-900">{exam.patient.telephone}</p>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Téléphone</label>
+                <p className="text-base text-gray-900 font-medium">{exam.patient.telephone}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Email</label>
-                <p className="text-sm text-gray-900">{exam.patient.email}</p>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</label>
+                <p className="text-base text-gray-900 font-medium">{exam.patient.email}</p>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <div className="border-t border-gray-200 my-4" />
+
+          <Card className="shadow-md border-0">
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <FileText className="mr-2 h-5 w-5" />
+              <CardTitle className="flex items-center text-blue-800 text-lg font-semibold">
+                <FileText className="mr-2 h-5 w-5 text-blue-400" />
                 Détails de l'examen
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-500">Type d'examen</label>
-                <p className="text-sm text-gray-900">{exam.typeExamen.nom}</p>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Type d'examen</label>
+                <p className="text-base text-gray-900 font-medium">{exam.typeExamen.nom}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Catégorie</label>
-                <p className="text-sm text-gray-900">{exam.typeExamen.categorie}</p>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Catégorie</label>
+                <p className="text-base text-gray-900 font-medium">{exam.typeExamen.categorie}</p>
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-500">Date</label>
-                <p className="text-sm text-gray-900">{formatDate(exam.dateExamen)}</p>
+                <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</label>
+                <p className="text-base text-gray-900 font-medium">{formatDate(exam.dateExamen)}</p>
               </div>
               {exam.description && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Description</label>
-                  <p className="text-sm text-gray-900">{exam.description}</p>
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</label>
+                  <p className="text-base text-gray-900 font-medium">{exam.description}</p>
                 </div>
               )}
               {exam.resultat && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">Résultat</label>
-                  <p className="text-sm text-gray-900 bg-green-50 p-2 rounded">
+                  <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Résultat</label>
+                  <p className="text-base text-green-800 bg-green-50 p-2 rounded font-medium">
                     {exam.resultat}
                   </p>
                 </div>
               )}
             </CardContent>
           </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <UserPlus className="mr-2 h-5 w-5" />
-                Radiologues impliqués
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {exam.radiologues.map((radiologue) => (
-                  <div key={radiologue.id} className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
-                    <span className="text-sm text-gray-900">
-                      {radiologue.prenom} {radiologue.nom}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* Images and Analysis */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-2 space-y-8">
           {/* Images */}
-          <Card>
+          <Card className="shadow-md border-0">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center">
-                  <ImageIcon className="mr-2 h-5 w-5" />
-                  Images ({images.length})
+                <CardTitle className="flex items-center text-blue-800 text-lg font-semibold">
+                  <ImageIcon className="mr-2 h-5 w-5 text-blue-400" />
+                  Images <span className="ml-1 text-blue-500 font-bold">({images.length})</span>
                   {!permissionLoading && !canEdit && (
                     <Lock className="ml-2 h-4 w-4 text-gray-400" />
                   )}
@@ -417,7 +398,7 @@ export default function RadiologueExamDetail() {
                       disabled={uploading}
                     />
                     <label htmlFor="image-upload">
-                      <Button disabled={uploading} size="sm" asChild>
+                      <Button disabled={uploading} size="sm" asChild className="rounded-full">
                         <span>
                           <Upload className="mr-2 h-4 w-4" />
                           {uploading ? 'Upload...' : 'Ajouter'}
@@ -428,7 +409,7 @@ export default function RadiologueExamDetail() {
                 )}
               </div>
               {!permissionLoading && !canEdit && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 mt-2">
                   Vous ne pouvez pas ajouter d'images à cet examen
                 </p>
               )}
@@ -440,11 +421,11 @@ export default function RadiologueExamDetail() {
                   <p>Aucune image disponible</p>
                 </div>
               ) : (
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
                   {images.map((image) => (
                     <div
                       key={image.id}
-                      className={`border rounded-lg p-2 cursor-pointer transition-colors ${
+                      className={`border rounded-xl p-2 cursor-pointer transition-colors shadow-sm bg-white hover:shadow-md ${
                         selectedImage?.id === image.id
                           ? 'border-blue-500 bg-blue-50'
                           : 'hover:bg-gray-50'
@@ -454,7 +435,7 @@ export default function RadiologueExamDetail() {
                       <img
                         src={image.url}
                         alt={image.description}
-                        className="w-full h-32 object-cover rounded"
+                        className="w-full h-32 object-cover rounded-lg shadow"
                       />
                       <p className="text-xs text-gray-600 mt-2 truncate">
                         {image.description}
@@ -468,17 +449,17 @@ export default function RadiologueExamDetail() {
 
           {/* Analysis */}
           {exam.statut !== 'TERMINE' && (
-            <Card>
+            <Card className="shadow-md border-0">
               <CardHeader>
-                <CardTitle className="flex items-center">
-                  <CheckCircle className="mr-2 h-5 w-5" />
+                <CardTitle className="flex items-center text-blue-800 text-lg font-semibold">
+                  <CheckCircle className="mr-2 h-5 w-5 text-blue-400" />
                   Analyse radiologique
                   {!permissionLoading && !canEdit && (
                     <Lock className="ml-2 h-4 w-4 text-gray-400" />
                   )}
                 </CardTitle>
                 {!permissionLoading && !canEdit && (
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-gray-600 mt-2">
                     Vous n'avez pas les permissions pour modifier cet examen
                   </p>
                 )}
@@ -491,11 +472,12 @@ export default function RadiologueExamDetail() {
                       value={analysisResult}
                       onChange={(e) => setAnalysisResult(e.target.value)}
                       rows={4}
+                      className="rounded-lg border-gray-300 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
                     />
                     <Button 
                       onClick={markAsAnalyzed}
                       disabled={!analysisResult.trim()}
-                      className="w-full"
+                      className="w-full rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow"
                     >
                       <CheckCircle className="mr-2 h-4 w-4" />
                       Marquer comme analysé
@@ -509,83 +491,6 @@ export default function RadiologueExamDetail() {
                     </p>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Chat */}
-          {selectedImage && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <MessageSquare className="mr-2 h-5 w-5" />
-                  Discussion - {selectedImage.description}
-                  {!permissionLoading && !canEdit && (
-                    <Lock className="ml-2 h-4 w-4 text-gray-400" />
-                  )}
-                </CardTitle>
-                {!permissionLoading && !canEdit && (
-                  <p className="text-sm text-gray-600">
-                    Vous ne pouvez pas participer à cette discussion
-                  </p>
-                )}
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {/* Messages */}
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className="flex items-start space-x-3"
-                      >
-                        <div className="flex-shrink-0 w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-xs font-medium text-blue-600">
-                            {message.sender.prenom[0]}
-                          </span>
-                        </div>
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <span className="text-sm font-medium text-gray-900">
-                              {message.sender.prenom} {message.sender.nom}
-                            </span>
-                            <span className="text-xs text-gray-500">
-                              {formatDate(message.createdAt)}
-                            </span>
-                          </div>
-                          <p className="text-sm text-gray-700 bg-gray-50 rounded-lg p-3">
-                            {message.content}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Message Input */}
-                  {canEdit ? (
-                    <div className="flex space-x-2">
-                      <Input
-                        placeholder="Tapez votre message..."
-                        value={newMessage}
-                        onChange={(e) => setNewMessage(e.target.value)}
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            sendMessage();
-                          }
-                        }}
-                      />
-                      <Button onClick={sendMessage} disabled={!newMessage.trim()}>
-                        <Send className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-gray-500 text-sm">
-                        Lecture seule - Vous ne pouvez pas envoyer de messages
-                      </p>
-                    </div>
-                  )}
-                </div>
               </CardContent>
             </Card>
           )}
