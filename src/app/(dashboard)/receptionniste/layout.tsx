@@ -20,7 +20,6 @@ import NotificationWidget from "@/components/NotificationWidget";
 const navigation = [
   { name: "Dashboard", href: "/receptionniste", icon: Activity },
   { name: "Patients", href: "/receptionniste/patients", icon: Users },
-  { name: "Nouveau Patient", href: "/receptionniste/patients?action=new", icon: UserPlus },
   { name: "Rendez-vous", href: "/receptionniste/rendez-vous", icon: Calendar },
   { name: "Paramètres", href: "/receptionniste/paramètres", icon: Settings },
 ];
