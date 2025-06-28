@@ -108,7 +108,7 @@ export const radiologistApi = {
   getExamens: (params?: { status?: string; category?: string; search?: string }): Promise<ExamenMedical[]> => 
     api.get('/examens-medicaux', { params }).then((res: any) => res.data),
 
-  getRadiologistExamens: (params?: { status?: string; category?: string; search?: string; etablissementID?: string }): Promise<ExamenMedical[]> => 
+  getRadiologistExamens: (params?: { status?: string; category?: string; search?: string }): Promise<ExamenMedical[]> => 
     api.get('/examens-medicaux/radiologue/liste-avec-images', { params }).then((res: any) => res.data),
 
   getExamen: (id: string): Promise<ExamenMedical> => 
