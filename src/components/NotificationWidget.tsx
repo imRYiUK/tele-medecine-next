@@ -11,6 +11,7 @@ import { useNotificationSocket } from '@/lib/hooks/useNotificationSocket';
 import { notificationService, NotificationRecipient } from '@/lib/services/notificationService';
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { useRouter } from 'next/navigation';
 
 // Helper function to safely parse dates
 const parseDate = (dateString: string | Date | number): Date => {
@@ -86,10 +87,20 @@ export default function NotificationWidget() {
   const [isLoading, setIsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const router = useRouter();
 
   // WebSocket connection for real-time notifications
   const { isConnected } = useNotificationSocket({
     onNewNotification: (notification) => {
+      // Ignore system/status events accidentally sent as notifications
+      if (
+        notification.titre === 'notification_read' ||
+        notification.type === 'notification_read' ||
+        notification.titre === 'all_notifications_read' ||
+        notification.type === 'all_notifications_read'
+      ) {
+        return;
+      }
       // Convert the notification to NotificationRecipient format
       const newNotificationRecipient: NotificationRecipient = {
         id: `${notification.notificationID}-${notification.utilisateurID}`,
@@ -123,6 +134,7 @@ export default function NotificationWidget() {
       }
     },
     onNotificationRead: (notificationId) => {
+      // WebSocket event: Update notification status to read (not a new notification)
       setNotifications(prev => 
         prev.map(notif => 
           notif.notificationID === notificationId 
@@ -131,6 +143,11 @@ export default function NotificationWidget() {
         )
       );
       setUnreadCount(prev => Math.max(0, prev - 1));
+    },
+    onAllNotificationsRead: () => {
+      // WebSocket event: Update all notifications as read (not new notifications)
+      setNotifications(prev => prev.map(notif => ({ ...notif, estLu: true })));
+      setUnreadCount(0);
     },
     onError: (error) => {
       console.error('Notification WebSocket error:', error);
@@ -179,14 +196,8 @@ export default function NotificationWidget() {
   const handleMarkAsRead = async (notificationId: string) => {
     try {
       await notificationService.markAsRead(notificationId);
-      setNotifications(prev => 
-        prev.map(notif => 
-          notif.notificationID === notificationId 
-            ? { ...notif, estLu: true }
-            : notif
-        )
-      );
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      // Note: State will be updated by the WebSocket 'notification_read' event
+      // No need to update state here to avoid duplicate updates
     } catch (error) {
       console.error('Error marking notification as read:', error);
     }
@@ -195,8 +206,8 @@ export default function NotificationWidget() {
   const handleMarkAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
-      setNotifications(prev => prev.map(notif => ({ ...notif, estLu: true })));
-      setUnreadCount(0);
+      // Note: State will be updated by the WebSocket 'all_notifications_read' event
+      // No need to update state here to avoid duplicate updates
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
@@ -219,11 +230,15 @@ export default function NotificationWidget() {
     if (!notification.estLu) {
       await handleMarkAsRead(notification.notificationID);
     }
-    
     if (notification.notification.lien) {
-      window.open(notification.notification.lien, '_blank');
+      if (notification.notification.lien.startsWith('/')) {
+        // Internal link: use Next.js router
+        router.push(notification.notification.lien);
+      } else {
+        // External link: use normal navigation
+        window.location.href = notification.notification.lien;
+      }
     }
-    
     setIsOpen(false);
   };
 

@@ -25,6 +25,7 @@ interface Notification {
 interface UseNotificationSocketProps {
   onNewNotification?: (notification: Notification) => void;
   onNotificationRead?: (notificationId: string) => void;
+  onAllNotificationsRead?: () => void;
   onError?: (error: string) => void;
   onConnected?: () => void;
   onDisconnected?: () => void;
@@ -33,6 +34,7 @@ interface UseNotificationSocketProps {
 export const useNotificationSocket = ({
   onNewNotification,
   onNotificationRead,
+  onAllNotificationsRead,
   onError,
   onConnected,
   onDisconnected,
@@ -49,6 +51,7 @@ export const useNotificationSocket = ({
   // Stabilize callback functions to prevent infinite loops
   const stableOnNewNotification = useCallback(onNewNotification || (() => {}), []);
   const stableOnNotificationRead = useCallback(onNotificationRead || (() => {}), []);
+  const stableOnAllNotificationsRead = useCallback(onAllNotificationsRead || (() => {}), []);
   const stableOnError = useCallback(onError || (() => {}), []);
   const stableOnConnected = useCallback(onConnected || (() => {}), []);
   const stableOnDisconnected = useCallback(onDisconnected || (() => {}), []);
@@ -131,8 +134,13 @@ export const useNotificationSocket = ({
     });
 
     socket.on('notification_read', (data: { notificationId: string }) => {
-      console.log('Notification marked as read:', data.notificationId);
+      console.log('WebSocket: Notification status updated to read:', data.notificationId);
       stableOnNotificationRead(data.notificationId);
+    });
+
+    socket.on('all_notifications_read', () => {
+      console.log('All notifications marked as read');
+      stableOnAllNotificationsRead();
     });
 
     socket.on('error', (error) => {
@@ -154,7 +162,7 @@ export const useNotificationSocket = ({
         socketRef.current = null;
       }
     };
-  }, [token, stableOnNewNotification, stableOnNotificationRead, stableOnError, stableOnConnected, stableOnDisconnected]);
+  }, [token, stableOnNewNotification, stableOnNotificationRead, stableOnAllNotificationsRead, stableOnError, stableOnConnected, stableOnDisconnected]);
 
   return {
     isConnected,
