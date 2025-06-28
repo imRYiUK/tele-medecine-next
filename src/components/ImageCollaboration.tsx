@@ -18,7 +18,8 @@ import {
   AlertCircle,
   Wifi,
   WifiOff,
-  Info
+  Info,
+  AlertTriangle
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { radiologistApi } from "@/lib/api/radiologist";
@@ -98,21 +99,44 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
   const [isAccepting, setIsAccepting] = useState<string | null>(null);
   const [isRejecting, setIsRejecting] = useState<string | null>(null);
   const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
+  const [resolvedImageID, setResolvedImageID] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Resolve the actual imageID from sopInstanceUID if needed
+  useEffect(() => {
+    const resolveImageID = async () => {
+      try {
+        // If we have a sopInstanceUID, we need to resolve the actual imageID
+        if (sopInstanceUID) {
+          const response = await api.get(`/examens-medicaux/images/sop/${sopInstanceUID}`);
+          setResolvedImageID(response.data.imageID);
+        } else {
+          // If no sopInstanceUID, use the imageId directly (assuming it's already the correct imageID)
+          setResolvedImageID(imageId);
+        }
+      } catch (error) {
+        console.error('Error resolving imageID:', error);
+        setError('Failed to resolve image ID');
+        setLoading(false);
+      }
+    };
+
+    resolveImageID();
+  }, [sopInstanceUID, imageId]);
 
   // Check if there are multiple collaborators (more than just the current user)
   const hasMultipleCollaborators = collaborators.length > 1 || 
     (collaborators.length === 1 && collaborators[0].utilisateurID !== currentUserId);
 
-  // WebSocket chat hook - only use when there are multiple collaborators
+  // WebSocket chat hook - only use when there are multiple collaborators and we have a resolved imageID
   const {
     isConnected,
     isJoining,
     sendMessage: sendSocketMessage,
     sendTypingIndicator,
   } = useChatSocket({
-    imageID: imageId,
+    imageID: resolvedImageID || '',
     onNewMessage: (message) => {
       setMessages(prev => [...prev, message]);
     },
@@ -130,17 +154,17 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     onError: (error) => {
       setError(error);
     },
-    // Only enable WebSocket if there are multiple collaborators
-    enabled: hasMultipleCollaborators,
+    // Only enable WebSocket if there are multiple collaborators and we have a resolved imageID
+    enabled: hasMultipleCollaborators && !!resolvedImageID,
   });
 
   useEffect(() => {
-    if (imageId) {
+    if (resolvedImageID) {
       loadCollaborators();
       loadMessages();
       loadPendingCollaborations();
     }
-  }, [imageId]);
+  }, [resolvedImageID]);
 
   useEffect(() => {
     scrollToBottom();
@@ -151,13 +175,15 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
   };
 
   const loadCollaborators = async () => {
+    if (!resolvedImageID) return;
+    
     try {
-      // Use the new SOP-based endpoint if sopInstanceUID is available, otherwise fall back to imageId
+      // Use the new SOP-based endpoint if sopInstanceUID is available, otherwise fall back to resolvedImageID
       if (sopInstanceUID) {
         const response = await radiologistApi.getImageCollaboratorsBySopInstanceUID(sopInstanceUID);
         setCollaborators(response || []);
       } else {
-        const response = await api.get(`/examen-medical/images/${imageId}/collaborators`);
+        const response = await api.get(`/examen-medical/images/${resolvedImageID}/collaborators`);
         setCollaborators(response.data?.data || response.data || []);
       }
     } catch (error) {
@@ -168,8 +194,10 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
   };
 
   const loadMessages = async () => {
+    if (!resolvedImageID) return;
+    
     try {
-      const response = await api.get(`/examen-medical/images/${imageId}/messages`);
+      const response = await api.get(`/examen-medical/images/${resolvedImageID}/messages`);
       setMessages(response.data?.data || response.data || []);
     } catch (error) {
       console.error('Error loading messages:', error);
@@ -181,14 +209,16 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
   };
 
   const loadPendingCollaborations = async () => {
+    if (!resolvedImageID) return;
+    
     try {
       // Use the new SOP-based endpoint if sopInstanceUID is available, otherwise fall back to the old method
       if (sopInstanceUID) {
         const response = await radiologistApi.getPendingCollaborationsForImageBySopInstanceUID(sopInstanceUID);
         setPendingCollaborations(response || []);
       } else {
-        // Use the imageId-based endpoint for pending collaborations where current user is the inviter
-        const response = await radiologistApi.getPendingCollaborationsForImage(imageId);
+        // Use the resolvedImageID-based endpoint for pending collaborations where current user is the inviter
+        const response = await radiologistApi.getPendingCollaborationsForImage(resolvedImageID);
         setPendingCollaborations(response || []);
       }
     } catch (error) {
@@ -230,7 +260,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
   };
 
   const sendMessage = async () => {
-    if (!newMessage.trim()) return;
+    if (!newMessage.trim() || !resolvedImageID) return;
 
     try {
       setIsSending(true);
@@ -242,7 +272,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
         setNewMessage("");
       } else {
         // Fallback to REST API if WebSocket is not connected or if single collaborator
-        const response = await api.post(`/examen-medical/images/${imageId}/messages`, {
+        const response = await api.post(`/examen-medical/images/${resolvedImageID}/messages`, {
           content: newMessage.trim()
         });
 
@@ -350,11 +380,24 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     }
   };
 
-  if (loading) {
+  if (loading || !resolvedImageID) {
     return (
       <Card>
         <CardContent className="flex items-center justify-center h-32">
           <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="flex items-center justify-center h-32">
+          <div className="text-center text-red-600">
+            <AlertTriangle className="h-8 w-8 mx-auto mb-2" />
+            <p className="text-sm">{error}</p>
+          </div>
         </CardContent>
       </Card>
     );

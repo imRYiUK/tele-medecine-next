@@ -25,17 +25,17 @@ interface DashboardStats {
 }
 
 interface RecentExam {
-  id: string;
+  examenID: string;
   patient: {
     nom: string;
     prenom: string;
   };
   typeExamen: {
-    nom: string;
+    nomType: string;
   };
   dateExamen: string;
-  statut: string;
-  urgent: boolean;
+  estAnalyse: boolean;
+  description: string;
 }
 
 export default function RadiologueDashboard() {
@@ -63,20 +63,18 @@ export default function RadiologueDashboard() {
     fetchDashboardData();
   }, []);
 
-  const getStatusBadge = (status: string, urgent: boolean) => {
-    if (urgent) {
+  const getStatusBadge = (estAnalyse: boolean, description: string) => {
+    // Check if urgent based on description
+    const isUrgent = description.toLowerCase().includes('urgent') || description.toLowerCase().includes('critique');
+    
+    if (isUrgent) {
       return <Badge variant="destructive">Urgent</Badge>;
     }
     
-    switch (status) {
-      case 'EN_ATTENTE':
-        return <Badge variant="secondary">En attente</Badge>;
-      case 'EN_COURS':
-        return <Badge variant="default">En cours</Badge>;
-      case 'TERMINE':
-        return <Badge variant="outline">Terminé</Badge>;
-      default:
-        return <Badge variant="secondary">{status}</Badge>;
+    if (estAnalyse) {
+      return <Badge variant="outline">Terminé</Badge>;
+    } else {
+      return <Badge variant="secondary">En attente</Badge>;
     }
   };
 
@@ -172,9 +170,9 @@ export default function RadiologueDashboard() {
             </div>
           ) : (
             <div className="space-y-4">
-              {recentExams.map((exam) => (
+              {recentExams.map((exam, index) => (
                 <div
-                  key={exam.id}
+                  key={exam.examenID || `exam-${index}`}
                   className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   <div className="flex items-center space-x-4">
@@ -185,7 +183,7 @@ export default function RadiologueDashboard() {
                       <h3 className="font-medium text-gray-900">
                         {exam.patient.prenom} {exam.patient.nom}
                       </h3>
-                      <p className="text-sm text-gray-500">{exam.typeExamen.nom}</p>
+                      <p className="text-sm text-gray-500">{exam.typeExamen.nomType}</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <Calendar className="h-3 w-3 text-gray-400" />
                         <span className="text-xs text-gray-500">
@@ -195,8 +193,8 @@ export default function RadiologueDashboard() {
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    {getStatusBadge(exam.statut, exam.urgent)}
-                    <Link href={`/radiologue/examens/${exam.id}`}>
+                    {getStatusBadge(exam.estAnalyse, exam.description)}
+                    <Link href={`/radiologue/examens/${exam.examenID}`}>
                       <Button variant="ghost" size="sm">
                         <Eye className="h-4 w-4" />
                       </Button>
