@@ -527,11 +527,11 @@ export default function ReceptionnisteRendezVousPage() {
             onEventResize={handleEventResize}
             onEventDrop={handleEventDrop}
             eventPropGetter={(event) => {
-              // Check if there are multiple appointments in the same time slot
-              const overlappingEvents = events.filter(e => 
-                e.start.getTime() === event.start.getTime() && 
-                e.end.getTime() === event.end.getTime()
-              );
+              // Check if there are multiple appointments that overlap in time (including partial overlaps)
+              const overlappingEvents = events.filter(e => {
+                // Check if events overlap in time (any overlap, not just exact same times)
+                return (e.start < event.end && e.end > event.start);
+              });
               
               const isOverlapping = overlappingEvents.length > 1;
               
