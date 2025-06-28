@@ -36,7 +36,19 @@ type CalendarEvent = {
   resource: RendezVous;
 };
 
-function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeure }: { patientID?: string, onCreated: () => void, initialDateHeure?: string, initialEndHeure?: string }) {
+function RendezVousForm({ 
+  patientID, 
+  onCreated, 
+  initialDateHeure, 
+  initialEndHeure, 
+  existingAppointments = [] 
+}: { 
+  patientID?: string, 
+  onCreated: () => void, 
+  initialDateHeure?: string, 
+  initialEndHeure?: string,
+  existingAppointments?: RendezVous[]
+}) {
   const { user } = useAuth();
   const router = useRouter();
   let initialDate = "";
@@ -62,6 +74,7 @@ function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeur
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [medecins, setMedecins] = useState<User[]>([]);
+  const [radiologues, setRadiologues] = useState<User[]>([]);
   const [searchMedecin, setSearchMedecin] = useState("");
   const [openCombo, setOpenCombo] = useState(false);
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -88,9 +101,16 @@ function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeur
     // Utilise user.etablissementID directement (champ existant dans User)
     const etabId = user?.etablissementID;
     if (etabId) {
-      usersService.getMedecinsByEtablissement(etabId).then(setMedecins);
+      Promise.all([
+        usersService.getMedecinsByEtablissement(etabId),
+        usersService.getRadiologuesByEtablissement(etabId)
+      ]).then(([medecinsData, radiologuesData]) => {
+        setMedecins(medecinsData);
+        setRadiologues(radiologuesData);
+      });
     } else {
       setMedecins([]);
+      setRadiologues([]);
     }
   }, [user?.etablissementID]);
 
@@ -113,6 +133,37 @@ function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeur
     e.preventDefault();
     setLoading(true);
     setError(null);
+    
+    // Check for time conflicts with the same professional
+    if (form.medecinID && form.date && form.debutTime && form.endTime) {
+      const newStart = new Date(`${form.date}T${form.debutTime}`);
+      const newEnd = new Date(`${form.date}T${form.endTime}`);
+      
+      const hasConflict = existingAppointments.some((rdv: RendezVous) => {
+        // Only check conflicts with the same professional
+        if (rdv.medecin?.utilisateurID !== form.medecinID) {
+          return false;
+        }
+        
+        // Check if the dates are the same
+        if (rdv.date !== form.date) {
+          return false;
+        }
+        
+        // Check for time overlap
+        const existingStart = new Date(`${rdv.date}T${rdv.debutTime}`);
+        const existingEnd = new Date(`${rdv.date}T${rdv.endTime}`);
+        
+        return (newStart < existingEnd && newEnd > existingStart);
+      });
+      
+      if (hasConflict) {
+        toast.error("Ce professionnel a déjà un rendez-vous sur ce créneau horaire.");
+        setLoading(false);
+        return;
+      }
+    }
+    
     try {
       await rendezVousService.create({
         patientID: form.patientID,
@@ -132,8 +183,9 @@ function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeur
     }
   };
 
-  // Filtrage dynamique des médecins selon la recherche
-  const filteredMedecins = medecins.filter((m) => {
+  // Filtrage dynamique des médecins et radiologues selon la recherche
+  const allProfessionals = [...medecins, ...radiologues];
+  const filteredProfessionals = allProfessionals.filter((m) => {
     const searchStr = `${m.prenom} ${m.nom} ${m.email || ''} ${m.telephone || ''}`.toLowerCase();
     return searchStr.includes(searchMedecin.toLowerCase());
   }).slice(0, 8);
@@ -143,6 +195,16 @@ function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeur
     const searchStr = `${p.prenom} ${p.nom} ${p.email || ''} ${p.telephone || ''}`.toLowerCase();
     return searchStr.includes(searchPatient.toLowerCase());
   }).slice(0, 8);
+
+  // Fonction pour trouver le professionnel sélectionné
+  const getSelectedProfessional = () => {
+    return allProfessionals.find((m) => m.utilisateurID === form.medecinID);
+  };
+
+  // Fonction pour obtenir le type de professionnel
+  const getProfessionalType = (user: User) => {
+    return user.role === 'RADIOLOGUE' ? 'Radiologue' : 'Médecin';
+  };
 
   return (
     <form onSubmit={handleSubmit} className="bg-white rounded shadow p-4 mb-6 border space-y-4">
@@ -200,7 +262,7 @@ function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeur
           <input type="hidden" name="patientID" value={form.patientID} required />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Médecin</label>
+          <label className="block text-sm font-medium mb-1">Médecin/Radiologue</label>
           <div className="relative">
             <button
               type="button"
@@ -209,28 +271,28 @@ function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeur
             >
               {form.medecinID
                 ? (() => {
-                    const m = medecins.find((m) => m.utilisateurID === form.medecinID);
+                    const m = getSelectedProfessional();
                     return m
-                      ? `${m.prenom} ${m.nom} • ${m.email || m.telephone || ''}`
-                      : "Sélectionner un médecin...";
+                      ? `${m.prenom} ${m.nom} (${getProfessionalType(m)}) • ${m.email || m.telephone || ''}`
+                      : "Sélectionner un professionnel...";
                   })()
-                : "Sélectionner un médecin..."}
+                : "Sélectionner un médecin ou radiologue..."}
             </button>
             {openCombo && (
               <div className="absolute z-20 mt-1 w-full bg-white border rounded shadow-lg max-h-96 overflow-y-auto">
                 <div className="p-2">
                   <input
                     type="text"
-                    placeholder="Rechercher un médecin..."
+                    placeholder="Rechercher un médecin ou radiologue..."
                     value={searchMedecin}
                     onChange={e => setSearchMedecin(e.target.value)}
                     className="border rounded px-2 py-1 w-full mb-2"
                     autoFocus
                   />
-                  {filteredMedecins.length === 0 && (
-                    <div className="text-gray-400 text-sm p-2">Aucun médecin trouvé.</div>
+                  {filteredProfessionals.length === 0 && (
+                    <div className="text-gray-400 text-sm p-2">Aucun professionnel trouvé.</div>
                   )}
-                  {filteredMedecins.map((m) => (
+                  {filteredProfessionals.map((m) => (
                     <div
                       key={m.utilisateurID}
                       className={`p-2 cursor-pointer hover:bg-emerald-50 rounded flex flex-col ${form.medecinID === m.utilisateurID ? 'bg-emerald-100' : ''}`}
@@ -240,7 +302,7 @@ function RendezVousForm({ patientID, onCreated, initialDateHeure, initialEndHeur
                       }}
                     >
                       <span className="font-medium">{m.prenom} {m.nom}</span>
-                      <span className="text-xs text-gray-500">{m.email || m.telephone}</span>
+                      <span className="text-xs text-gray-500">{getProfessionalType(m)} • {m.email || m.telephone}</span>
                     </div>
                   ))}
                 </div>
@@ -398,21 +460,31 @@ export default function ReceptionnisteRendezVousPage() {
               onCreated={handleCreated}
               initialDateHeure={selectedSlot ? formatDate(selectedSlot.start, "yyyy-MM-dd'T'HH:mm") : undefined}
               initialEndHeure={selectedSlot && selectedSlot.end ? formatDate(selectedSlot.end, "yyyy-MM-dd'T'HH:mm") : undefined}
+              existingAppointments={rdvs}
             />
           </DialogContent>
         </Dialog>
       )}
-      {patientID && <RendezVousForm patientID={patientID} onCreated={handleCreated} />}
+      {patientID && <RendezVousForm patientID={patientID} onCreated={handleCreated} existingAppointments={rdvs} />}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h2 className="text-3xl font-bold text-emerald-700 tracking-tight">Rendez-vous</h2>
       </div>
-      <div className="flex flex-col md:flex-row gap-4 items-center mb-2">
+      <div className="flex flex-col md:flex-row gap-4 items-center mb-2 md:mb-4 md:justify-between">
         <Input
           placeholder="Rechercher par patient ou médecin..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="max-w-xs"
         />
+        <Button
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+          onClick={() => {
+            setSelectedSlot(null);
+            setDialogOpen(true);
+          }}
+        >
+          Nouveau rendez-vous
+        </Button>
       </div>
       <div className="overflow-x-auto rounded-lg border bg-white shadow">
         <div style={{ height: 600 }}>
@@ -439,15 +511,9 @@ export default function ReceptionnisteRendezVousPage() {
             culture="fr"
             selectable
             onSelectSlot={(slotInfo) => {
-              // Check for overlap with existing events
-              const hasOverlap = events.some(event => {
-                // event.start < slotInfo.end && event.end > slotInfo.start
-                return event.start < slotInfo.end && event.end > slotInfo.start;
-              });
-              if (hasOverlap) {
-                toast.error("Un rendez-vous existe déjà sur ce créneau.");
-                return;
-              }
+              // Check for overlap with existing events for the same professional
+              // We'll need to get the selected professional from the form
+              // For now, we'll allow the creation and let the backend handle the validation
               setSelectedSlot({ start: slotInfo.start, end: slotInfo.end });
               setDialogOpen(true);
             }}
@@ -460,19 +526,42 @@ export default function ReceptionnisteRendezVousPage() {
             resizable
             onEventResize={handleEventResize}
             onEventDrop={handleEventDrop}
-            eventPropGetter={() => ({
-              style: {
-                backgroundColor: '#059669',
-                borderRadius: 8,
-                color: 'white',
-                border: 'none',
-                fontWeight: 500,
-                fontSize: 15,
-                paddingLeft: 8,
-                paddingRight: 8,
-              },
-            })}
+            eventPropGetter={(event) => {
+              // Check if there are multiple appointments in the same time slot
+              const overlappingEvents = events.filter(e => 
+                e.start.getTime() === event.start.getTime() && 
+                e.end.getTime() === event.end.getTime()
+              );
+              
+              const isOverlapping = overlappingEvents.length > 1;
+              
+              return {
+                style: {
+                  backgroundColor: isOverlapping ? '#f59e0b' : '#059669', // Orange for overlapping, green for single
+                  borderRadius: 8,
+                  color: 'white',
+                  border: 'none',
+                  fontWeight: 500,
+                  fontSize: 15,
+                  paddingLeft: 8,
+                  paddingRight: 8,
+                  opacity: isOverlapping ? 0.8 : 1,
+                },
+              };
+            }}
           />
+        </div>
+      </div>
+      
+      {/* Legend for calendar colors */}
+      <div className="flex items-center gap-4 text-sm text-gray-600">
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-emerald-600 rounded"></div>
+          <span>Rendez-vous unique</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-amber-500 rounded opacity-80"></div>
+          <span>Rendez-vous simultané (professionnels différents)</span>
         </div>
       </div>
     </div>

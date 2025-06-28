@@ -62,4 +62,8 @@ export const usersService = {
     const res = await api.get(`/users/medecins/etablissement/${etablissementID}`);
     return res.data;
   },
+  async getRadiologuesByEtablissement(etablissementID: string): Promise<User[]> {
+    const res = await api.get(`/users/radiologues/etablissement/${etablissementID}`);
+    return res.data;
+  },
 }; 
