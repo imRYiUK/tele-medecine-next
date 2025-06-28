@@ -404,6 +404,52 @@ export default function ReceptionnisteRendezVousPage() {
     };
   });
 
+  // Pre-calculate all overlap groups
+  const calculateOverlapGroups = (events: CalendarEvent[]): Map<string, CalendarEvent[]> => {
+    const overlapGroups = new Map<string, CalendarEvent[]>();
+    const processed = new Set<string>();
+
+    for (const event of events) {
+      if (processed.has(event.resource.rendezVousID)) continue;
+
+      const group: CalendarEvent[] = [event];
+      let changed = true;
+
+      // Keep expanding the group until no new overlapping events are found
+      while (changed) {
+        changed = false;
+        for (const groupEvent of group) {
+          for (const otherEvent of events) {
+            // Skip if already in group
+            if (group.some(e => e.resource.rendezVousID === otherEvent.resource.rendezVousID)) {
+              continue;
+            }
+
+            // Check if this event overlaps with any event in the group
+            const overlapsWithGroup = group.some(groupEvent => 
+              otherEvent.start < groupEvent.end && otherEvent.end > groupEvent.start
+            );
+
+            if (overlapsWithGroup) {
+              group.push(otherEvent);
+              changed = true;
+            }
+          }
+        }
+      }
+
+      // Add all events in this group to the map
+      for (const groupEvent of group) {
+        overlapGroups.set(groupEvent.resource.rendezVousID, group);
+        processed.add(groupEvent.resource.rendezVousID);
+      }
+    }
+
+    return overlapGroups;
+  };
+
+  const overlapGroupsMap = calculateOverlapGroups(events);
+
   async function handleEventResize({ event, start, end }: { event: CalendarEvent, start: Date | string, end: Date | string }) {
     // Ensure start and end are Date objects
     const startDate = typeof start === 'string' ? new Date(start) : start;
@@ -527,13 +573,9 @@ export default function ReceptionnisteRendezVousPage() {
             onEventResize={handleEventResize}
             onEventDrop={handleEventDrop}
             eventPropGetter={(event) => {
-              // Check if there are multiple appointments that overlap in time (including partial overlaps)
-              const overlappingEvents = events.filter(e => {
-                // Check if events overlap in time (any overlap, not just exact same times)
-                return (e.start < event.end && e.end > event.start);
-              });
-              
-              const isOverlapping = overlappingEvents.length > 1;
+              // Get the overlap group for this event from the pre-calculated map
+              const overlapGroup = overlapGroupsMap.get(event.resource.rendezVousID) || [event];
+              const isOverlapping = overlapGroup.length > 1;
               
               // Define different colors for overlapping events
               const overlapColors = [
@@ -545,13 +587,20 @@ export default function ReceptionnisteRendezVousPage() {
                 '#f97316', // Orange-500
                 '#06b6d4', // Cyan
                 '#84cc16', // Lime
+                '#ec4899', // Pink
+                '#fbbf24', // Amber
+                '#34d399', // Emerald-400
+                '#60a5fa', // Blue-400
+                '#a78bfa', // Violet-400
+                '#fb7185', // Rose-400
+                '#fcd34d', // Yellow-400
               ];
               
               let backgroundColor = '#059669'; // Default green for single events
               
               if (isOverlapping) {
-                // Find the index of this event in the overlapping events array
-                const eventIndex = overlappingEvents.findIndex(e => 
+                // Find the index of this event in the overlap group
+                const eventIndex = overlapGroup.findIndex(e => 
                   e.resource.rendezVousID === event.resource.rendezVousID
                 );
                 // Use the color based on index, cycling through the colors if needed
@@ -584,11 +633,17 @@ export default function ReceptionnisteRendezVousPage() {
         </div>
         <div className="flex items-center gap-2">
           <span>Rendez-vous simultané:</span>
-          <div className="flex gap-1">
+          <div className="flex gap-1 flex-wrap">
             <div className="w-3 h-3 bg-orange-500 rounded"></div>
             <div className="w-3 h-3 bg-blue-500 rounded"></div>
             <div className="w-3 h-3 bg-purple-500 rounded"></div>
             <div className="w-3 h-3 bg-red-500 rounded"></div>
+            <div className="w-3 h-3 bg-emerald-500 rounded"></div>
+            <div className="w-3 h-3 bg-orange-400 rounded"></div>
+            <div className="w-3 h-3 bg-cyan-500 rounded"></div>
+            <div className="w-3 h-3 bg-lime-500 rounded"></div>
+            <div className="w-3 h-3 bg-pink-500 rounded"></div>
+            <div className="w-3 h-3 bg-amber-400 rounded"></div>
           </div>
         </div>
       </div>
