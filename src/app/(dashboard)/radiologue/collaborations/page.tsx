@@ -20,42 +20,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
-
-interface Collaboration {
-  id: string;
-  imageID: string;
-  inviterID: string;
-  inviteeID: string;
-  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
-  createdAt: string;
-  updatedAt: string;
-  inviter: {
-    utilisateurID: string;
-    nom: string;
-    prenom: string;
-    email: string;
-  };
-  invitee: {
-    utilisateurID: string;
-    nom: string;
-    prenom: string;
-    email: string;
-  };
-  image: {
-    imageID: string;
-    description: string;
-    examen: {
-      examenID: string;
-      patient: {
-        nom: string;
-        prenom: string;
-      };
-      typeExamen: {
-        nomType: string;
-      };
-    };
-  };
-}
+import { radiologistApi, ImageCollaboration } from "@/lib/api/radiologist";
 
 interface ChatMessage {
   id: string;
@@ -91,9 +56,9 @@ interface PendingCollaboration {
 }
 
 export default function CollaborationsPage() {
-  const [pendingCollaborations, setPendingCollaborations] = useState<Collaboration[]>([]);
-  const [acceptedCollaborations, setAcceptedCollaborations] = useState<Collaboration[]>([]);
-  const [sentInvitations, setSentInvitations] = useState<Collaboration[]>([]);
+  const [pendingCollaborations, setPendingCollaborations] = useState<ImageCollaboration[]>([]);
+  const [acceptedCollaborations, setAcceptedCollaborations] = useState<ImageCollaboration[]>([]);
+  const [sentInvitations, setSentInvitations] = useState<ImageCollaboration[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'pending' | 'accepted' | 'sent'>('pending');
   const [isAccepting, setIsAccepting] = useState<string | null>(null);
@@ -119,16 +84,16 @@ export default function CollaborationsPage() {
       setLoading(true);
       
       // Load pending collaborations (received invitations)
-      const pendingResponse = await api.get('/examen-medical/images/user/pending-collaborations');
-      setPendingCollaborations(pendingResponse.data?.data || pendingResponse.data || []);
+      const pendingResponse = await radiologistApi.getReceivedInvitations();
+      setPendingCollaborations(pendingResponse || []);
       
       // Load accepted collaborations
-      const acceptedResponse = await api.get('/examen-medical/images/user/collaborations');
-      setAcceptedCollaborations(acceptedResponse.data?.data || acceptedResponse.data || []);
+      const acceptedResponse = await radiologistApi.getActiveCollaborations();
+      setAcceptedCollaborations(acceptedResponse || []);
       
       // Load sent invitations
-      const sentResponse = await api.get('/examen-medical/images/user/sent-invitations');
-      setSentInvitations(sentResponse.data?.data || sentResponse.data || []);
+      const sentResponse = await radiologistApi.getSentInvitations();
+      setSentInvitations(sentResponse || []);
       
     } catch (error) {
       console.error('Error loading collaborations:', error);

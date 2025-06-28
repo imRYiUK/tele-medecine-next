@@ -145,12 +145,9 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
         const response = await radiologistApi.getPendingCollaborationsForImageBySopInstanceUID(sopInstanceUID);
         setPendingCollaborations(response || []);
       } else {
-        // Fallback to the old method - get all pending and filter for current image
-        const response = await api.get('/examen-medical/images/user/pending-collaborations');
-        const pending = response.data?.data || response.data || [];
-        // Filter for current image
-        const imagePending = pending.filter((collab: Collaboration) => collab.imageID === imageId);
-        setPendingCollaborations(imagePending);
+        // Use the imageId-based endpoint for pending collaborations where current user is the inviter
+        const response = await radiologistApi.getPendingCollaborationsForImage(imageId);
+        setPendingCollaborations(response || []);
       }
     } catch (error) {
       console.error('Error loading pending collaborations:', error);

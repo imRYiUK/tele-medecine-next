@@ -66,7 +66,9 @@ export interface ImageCollaboration {
   imageID: string;
   inviterID: string;
   inviteeID: string;
+  status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED';
   createdAt: string;
+  updatedAt: string;
   image: ImageMedicale & {
     examen: ExamenMedical;
   };
@@ -122,6 +124,17 @@ export const radiologistApi = {
   getUserCollaborations: (): Promise<ImageCollaboration[]> => 
     api.get('/examen-medical/images/user/collaborations').then((res: any) => res.data),
 
+  // User-centric endpoints (all images)
+  getReceivedInvitations: (): Promise<ImageCollaboration[]> => 
+    api.get('/examen-medical/images/user/received-invitations').then((res: any) => res.data),
+
+  getSentInvitations: (): Promise<ImageCollaboration[]> => 
+    api.get('/examen-medical/images/user/sent-invitations').then((res: any) => res.data),
+
+  getActiveCollaborations: (): Promise<ImageCollaboration[]> => 
+    api.get('/examen-medical/images/user/active-collaborations').then((res: any) => res.data),
+
+  // Legacy endpoints (keeping for backward compatibility)
   getPendingCollaborations: (): Promise<ImageCollaboration[]> => 
     api.get('/examen-medical/images/user/pending-collaborations').then((res: any) => res.data),
 
