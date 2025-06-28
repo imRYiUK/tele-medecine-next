@@ -14,10 +14,13 @@ import {
   Mail,
   Clock,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  Wifi,
+  WifiOff
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { radiologistApi } from "@/lib/api/radiologist";
+import { useChatSocket } from "@/lib/hooks/useChatSocket";
 
 interface Collaborator {
   utilisateurID: string;
@@ -92,7 +95,36 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
   const [pendingCollaborations, setPendingCollaborations] = useState<Collaboration[]>([]);
   const [isAccepting, setIsAccepting] = useState<string | null>(null);
   const [isRejecting, setIsRejecting] = useState<string | null>(null);
+  const [typingUsers, setTypingUsers] = useState<Set<string>>(new Set());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // WebSocket chat hook
+  const {
+    isConnected,
+    isJoining,
+    sendMessage: sendSocketMessage,
+    sendTypingIndicator,
+  } = useChatSocket({
+    imageID: imageId,
+    onNewMessage: (message) => {
+      setMessages(prev => [...prev, message]);
+    },
+    onUserTyping: (userId, isTyping) => {
+      setTypingUsers(prev => {
+        const newSet = new Set(prev);
+        if (isTyping) {
+          newSet.add(userId);
+        } else {
+          newSet.delete(userId);
+        }
+        return newSet;
+      });
+    },
+    onError: (error) => {
+      setError(error);
+    },
+  });
 
   useEffect(() => {
     if (imageId) {
@@ -187,18 +219,46 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
 
     try {
       setIsSending(true);
-      const response = await api.post(`/examen-medical/images/${imageId}/messages`, {
-        content: newMessage.trim()
-      });
+      
+      if (isConnected) {
+        // Use WebSocket for real-time messaging
+        await sendSocketMessage(newMessage.trim());
+        setNewMessage("");
+      } else {
+        // Fallback to REST API if WebSocket is not connected
+        const response = await api.post(`/examen-medical/images/${imageId}/messages`, {
+          content: newMessage.trim()
+        });
 
-      const sentMessage = response.data?.data || response.data;
-      setMessages(prev => [...prev, sentMessage]);
-      setNewMessage("");
+        const sentMessage = response.data?.data || response.data;
+        setMessages(prev => [...prev, sentMessage]);
+        setNewMessage("");
+      }
     } catch (error) {
       console.error('Error sending message:', error);
       setError('Failed to send message');
     } finally {
       setIsSending(false);
+    }
+  };
+
+  const handleMessageInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewMessage(value);
+    
+    // Send typing indicator
+    if (isConnected) {
+      sendTypingIndicator(true);
+      
+      // Clear previous timeout
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+      
+      // Set timeout to stop typing indicator
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTypingIndicator(false);
+      }, 1000);
     }
   };
 
@@ -245,6 +305,25 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     });
   };
 
+  const getTypingIndicatorText = () => {
+    if (typingUsers.size === 0) return null;
+    
+    const typingUserIds = Array.from(typingUsers);
+    const typingCollaborators = collaborators.filter(c => 
+      typingUserIds.includes(c.utilisateurID) && c.utilisateurID !== currentUserId
+    );
+    
+    if (typingCollaborators.length === 0) return null;
+    
+    if (typingCollaborators.length === 1) {
+      return `${typingCollaborators[0].prenom} ${typingCollaborators[0].nom} est en train d'écrire...`;
+    } else if (typingCollaborators.length === 2) {
+      return `${typingCollaborators[0].prenom} et ${typingCollaborators[1].prenom} sont en train d'écrire...`;
+    } else {
+      return 'Plusieurs personnes sont en train d\'écrire...';
+    }
+  };
+
   if (loading) {
     return (
       <Card>
@@ -257,40 +336,57 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
 
   return (
     <div className="flex flex-col h-full">
-      {/* Tab Navigation */}
-      <div className="flex space-x-1 mb-4">
-        <Button
-          variant={activeTab === 'chat' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setActiveTab('chat')}
-        >
-          <MessageSquare className="mr-2 h-4 w-4" />
-          Chat
-        </Button>
-        <Button
-          variant={activeTab === 'collaborators' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setActiveTab('collaborators')}
-        >
-          <Users className="mr-2 h-4 w-4" />
-          Collaborateurs ({collaborators.length})
-        </Button>
-        <Button
-          variant={activeTab === 'pending' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setActiveTab('pending')}
-        >
-          <Clock className="mr-2 h-4 w-4" />
-          En attente ({pendingCollaborations.length})
-        </Button>
-        <Button
-          variant={activeTab === 'invite' ? 'default' : 'outline'}
-          size="sm"
-          onClick={() => setActiveTab('invite')}
-        >
-          <UserPlus className="mr-2 h-4 w-4" />
-          Inviter
-        </Button>
+      {/* Connection Status */}
+      <div className="flex items-center justify-between mb-4">
+        <div className="flex space-x-1">
+          <Button
+            variant={activeTab === 'chat' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('chat')}
+          >
+            <MessageSquare className="mr-2 h-4 w-4" />
+            Chat
+          </Button>
+          <Button
+            variant={activeTab === 'collaborators' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('collaborators')}
+          >
+            <Users className="mr-2 h-4 w-4" />
+            Collaborateurs ({collaborators.length})
+          </Button>
+          <Button
+            variant={activeTab === 'pending' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('pending')}
+          >
+            <Clock className="mr-2 h-4 w-4" />
+            En attente ({pendingCollaborations.length})
+          </Button>
+          <Button
+            variant={activeTab === 'invite' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setActiveTab('invite')}
+          >
+            <UserPlus className="mr-2 h-4 w-4" />
+            Inviter
+          </Button>
+        </div>
+        
+        {/* Connection Status Indicator */}
+        <div className="flex items-center space-x-2">
+          {isConnected ? (
+            <div className="flex items-center text-green-600 text-sm">
+              <Wifi className="h-4 w-4 mr-1" />
+              Connecté
+            </div>
+          ) : (
+            <div className="flex items-center text-red-600 text-sm">
+              <WifiOff className="h-4 w-4 mr-1" />
+              Déconnecté
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 space-y-4">
@@ -343,6 +439,16 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
                   </div>
                 ))
               )}
+              
+              {/* Typing Indicator */}
+              {getTypingIndicatorText() && (
+                <div className="flex justify-start">
+                  <div className="bg-gray-100 text-gray-600 px-3 py-2 rounded-lg text-sm italic">
+                    {getTypingIndicatorText()}
+                  </div>
+                </div>
+              )}
+              
               <div ref={messagesEndRef} />
             </div>
 
@@ -350,7 +456,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
               <Input
                 placeholder="Tapez votre message..."
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
+                onChange={handleMessageInput}
                 onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
                 disabled={isSending}
               />
@@ -485,7 +591,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
               <p className="mt-2">Le collaborateur pourra :</p>
               <ul className="list-disc list-inside mt-2 space-y-1">
                 <li>Voir l'image DICOM</li>
-                <li>Participer aux discussions</li>
+                <li>Participer aux discussions en temps réel</li>
                 <li>Ajouter des annotations</li>
               </ul>
             </div>
