@@ -4,7 +4,7 @@ import { patientsService, Patient } from "@/lib/services/patients.service";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2 } from "lucide-react";
+import { Loader2, User as UserIcon, Phone, Mail, Heart, ArrowRight } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose, DialogTrigger } from "@/components/ui/dialog";
 import { useAuth } from "@/lib/hooks/useAuth";
 import Link from "next/link";
@@ -224,48 +224,104 @@ export default function ReceptionnistePatientsPage() {
         />
       </div>
       <div className="overflow-x-auto rounded-lg border bg-white shadow">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Nom & Prénom</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Téléphone</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {loading ? (
+        {/* Desktop Table View */}
+        <div className="hidden md:block">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell colSpan={3} className="text-center py-8">
-                  <Loader2 className="mx-auto animate-spin" />
-                </TableCell>
+                <TableHead>Nom & Prénom</TableHead>
+                <TableHead>Email</TableHead>
+                <TableHead>Téléphone</TableHead>
               </TableRow>
-            ) : filteredPatients.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={3} className="text-center py-8 text-gray-500">
-                  Aucun patient trouvé.
-                </TableCell>
-              </TableRow>
-            ) : (
-              filteredPatients.map((patient) => (
-                <TableRow key={patient.patientID} className="hover:bg-emerald-50 transition">
-                  <TableCell>
-                    <Link href={`/receptionniste/patients/${patient.patientID}`} className="block w-full h-full text-emerald-700 hover:underline">
-                      <div className="max-w-[200px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={`${patient.nom} ${patient.prenom}`}>
-                        {patient.nom} {patient.prenom}
-                      </div>
-                    </Link>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[150px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={patient.email}>{patient.email}</div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-[120px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={patient.telephone}>{patient.telephone}</div>
+            </TableHeader>
+            <TableBody>
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8">
+                    <Loader2 className="mx-auto animate-spin" />
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : filteredPatients.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8 text-gray-500">
+                    Aucun patient trouvé.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredPatients.map((patient) => (
+                  <TableRow key={patient.patientID} className="hover:bg-emerald-50 transition">
+                    <TableCell>
+                      <Link href={`/receptionniste/patients/${patient.patientID}`} className="block w-full h-full text-emerald-700 hover:underline">
+                        <div className="max-w-[200px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={`${patient.nom} ${patient.prenom}`}>
+                          {patient.nom} {patient.prenom}
+                        </div>
+                      </Link>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[150px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={patient.email}>{patient.email}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[120px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={patient.telephone}>{patient.telephone}</div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden">
+          {loading ? (
+            <div className="text-center py-12">
+              <Loader2 className="mx-auto animate-spin h-8 w-8 text-gray-400" />
+              <p className="mt-2 text-gray-500">Chargement des patients...</p>
+            </div>
+          ) : filteredPatients.length === 0 ? (
+            <div className="text-center py-12">
+              <Heart className="mx-auto h-12 w-12 text-gray-300" />
+              <p className="mt-2 text-gray-500">Aucun patient trouvé.</p>
+            </div>
+          ) : (
+            <div className="p-4 space-y-4">
+              {filteredPatients.map((patient) => (
+                <Link key={patient.patientID} href={`/receptionniste/patients/${patient.patientID}`} className="block">
+                  <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-all duration-200 group">
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Heart className="h-5 w-5 text-emerald-600" />
+                          <h3 className="font-bold text-emerald-700 truncate text-lg group-hover:text-emerald-800" title={`${patient.nom} ${patient.prenom}`}>
+                            {patient.nom} {patient.prenom}
+                          </h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Mail className="h-4 w-4 text-gray-400" />
+                          <p className="text-sm text-gray-600 truncate" title={patient.email}>
+                            {patient.email}
+                          </p>
+                        </div>
+                      </div>
+                      <ArrowRight className="h-5 w-5 text-emerald-600 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                    
+                    {/* Details */}
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center gap-3">
+                        <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <span className="text-gray-500 text-xs uppercase tracking-wide">Téléphone</span>
+                          <p className="truncate text-gray-900" title={patient.telephone}>{patient.telephone}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
