@@ -110,7 +110,7 @@ export default function EstablishmentsPage() {
       </div>
       <div className="overflow-x-auto rounded-lg border bg-white shadow">
         <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
+          <TableHeader>
             <TableRow>
               <TableHead>Nom</TableHead>
               <TableHead>Type</TableHead>

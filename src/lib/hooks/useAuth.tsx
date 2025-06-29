@@ -4,6 +4,7 @@ import Cookies from 'js-cookie';
 import { User, LoginCredentials, RegisterCredentials, AuthResponse } from '@/types/auth';
 import { authApi } from '@/lib/api/auth';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 interface AuthContextType {
   user: User | null;
@@ -90,9 +91,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // await authApi.logout();
       Cookies.remove('token');
       Cookies.remove('user');
+      toast.success('Déconnexion réussie ! Redirection en cours...');
       router.push('/login');
     } catch (error) {
       console.error('Logout error:', error);
+      toast.error('Erreur lors de la déconnexion');
       throw error;
     }
   }, [router]);

@@ -61,7 +61,7 @@ export default function AdminJournalPage() {
       </div>
       <div className="overflow-x-auto rounded-lg border bg-white shadow">
         <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
+          <TableHeader>
             <TableRow>
               <TableHead>Utilisateur</TableHead>
               <TableHead>Rôle</TableHead>
