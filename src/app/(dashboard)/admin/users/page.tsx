@@ -141,11 +141,21 @@ export default function AdminUsersPage() {
             ) : (
               paginatedUsers.map((userRow) => (
                 <TableRow key={userRow.utilisateurID}>
-                  <TableCell>{userRow.nom}</TableCell>
-                  <TableCell>{userRow.prenom}</TableCell>
-                  <TableCell>{userRow.email}</TableCell>
-                  <TableCell>{userRow.username}</TableCell>
-                  <TableCell>{userRow.telephone}</TableCell>
+                  <TableCell>
+                    <div className="max-w-[120px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={userRow.nom}>{userRow.nom}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[120px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={userRow.prenom}>{userRow.prenom}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[150px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={userRow.email}>{userRow.email}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[100px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={userRow.username}>{userRow.username}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[100px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={userRow.telephone}>{userRow.telephone}</div>
+                  </TableCell>
                   <TableCell>{userRow.role}</TableCell>
                   <TableCell>
                     <Switch

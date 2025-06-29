@@ -87,12 +87,24 @@ export default function AdminJournalPage() {
               paginatedEntries.map((entry) => (
                 <TableRow key={entry.journalActiviteID} className="hover:bg-gray-50 transition">
                   <TableCell>
-                    <div className="font-semibold text-gray-900">{entry.utilisateur?.prenom} {entry.utilisateur?.nom}</div>
-                    <div className="text-xs text-gray-500">{entry.utilisateur?.email}</div>
+                    <div className="font-semibold text-gray-900">
+                      <div className="max-w-[150px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={`${entry.utilisateur?.prenom} ${entry.utilisateur?.nom}`}>
+                        {entry.utilisateur?.prenom} {entry.utilisateur?.nom}
+                      </div>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      <div className="max-w-[150px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={entry.utilisateur?.email}>{entry.utilisateur?.email}</div>
+                    </div>
                   </TableCell>
-                  <TableCell>{entry.utilisateur?.role}</TableCell>
-                  <TableCell>{entry.typeAction}</TableCell>
-                  <TableCell className="max-w-xs truncate" title={entry.description}>{entry.description}</TableCell>
+                  <TableCell>
+                    <div className="max-w-[100px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={entry.utilisateur?.role}>{entry.utilisateur?.role}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[120px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={entry.typeAction}>{entry.typeAction}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[200px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={entry.description}>{entry.description}</div>
+                  </TableCell>
                   <TableCell>{format(new Date(entry.dateAction), 'Pp', { locale: fr })}</TableCell>
                 </TableRow>
               ))

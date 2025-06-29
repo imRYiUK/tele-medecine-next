@@ -143,13 +143,25 @@ export default function UsersPage() {
             ) : (
               paginatedUsers.map((user) => (
                 <TableRow key={user.utilisateurID}>
-                  <TableCell>{user.nom}</TableCell>
-                  <TableCell>{user.prenom}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>{user.username}</TableCell>
-                  <TableCell>{user.telephone}</TableCell>
+                  <TableCell>
+                    <div className="max-w-[120px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={user.nom}>{user.nom}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[120px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={user.prenom}>{user.prenom}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[150px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={user.email}>{user.email}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[100px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={user.username}>{user.username}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[100px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={user.telephone}>{user.telephone}</div>
+                  </TableCell>
                   <TableCell>{user.role}</TableCell>
-                  <TableCell>{user.etablissement?.nom || "-"}</TableCell>
+                  <TableCell>
+                    <div className="max-w-[150px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={user.etablissement?.nom || "-"}>{user.etablissement?.nom || "-"}</div>
+                  </TableCell>
                   <TableCell>
                     <Switch
                       checked={user.estActif}

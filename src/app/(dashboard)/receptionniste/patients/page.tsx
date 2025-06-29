@@ -250,11 +250,17 @@ export default function ReceptionnistePatientsPage() {
                 <TableRow key={patient.patientID} className="hover:bg-emerald-50 transition">
                   <TableCell>
                     <Link href={`/receptionniste/patients/${patient.patientID}`} className="block w-full h-full text-emerald-700 hover:underline">
-                      {patient.nom} {patient.prenom}
+                      <div className="max-w-[200px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={`${patient.nom} ${patient.prenom}`}>
+                        {patient.nom} {patient.prenom}
+                      </div>
                     </Link>
                   </TableCell>
-                  <TableCell>{patient.email}</TableCell>
-                  <TableCell>{patient.telephone}</TableCell>
+                  <TableCell>
+                    <div className="max-w-[150px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={patient.email}>{patient.email}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[120px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={patient.telephone}>{patient.telephone}</div>
+                  </TableCell>
                 </TableRow>
               ))
             )}

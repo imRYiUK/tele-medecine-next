@@ -141,12 +141,22 @@ export default function EstablishmentsPage() {
             ) : (
               paginatedEtabs.map((e) => (
                 <TableRow key={e.etablissementID} className="hover:bg-gray-50 transition">
-                  <TableCell className="font-semibold text-gray-900">{e.nom}</TableCell>
+                  <TableCell className="font-semibold text-gray-900">
+                    <div className="max-w-[200px] truncate" title={e.nom}>{e.nom}</div>
+                  </TableCell>
                   <TableCell><Badge variant="outline">{e.type}</Badge></TableCell>
-                  <TableCell>{e.region}</TableCell>
-                  <TableCell className="max-w-xs truncate" title={e.adresse}>{e.adresse}</TableCell>
-                  <TableCell>{e.telephone}</TableCell>
-                  <TableCell>{e.email}</TableCell>
+                  <TableCell>
+                    <div className="max-w-[150px] truncate" title={e.region}>{e.region}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[200px] truncate" title={e.adresse}>{e.adresse}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[120px] truncate" title={e.telephone}>{e.telephone}</div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="max-w-[120px] truncate text-ellipsis overflow-hidden whitespace-nowrap" title={e.email}>{e.email}</div>
+                  </TableCell>
                   <TableCell>
                     {e.orthancUrl ? (
                       <Badge variant="default" className="bg-green-100 text-green-800 hover:bg-green-200">
