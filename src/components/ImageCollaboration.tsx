@@ -152,7 +152,14 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
       });
     },
     onError: (error) => {
-      setError(error);
+      // Only set critical WebSocket errors that should block the view
+      // Non-critical errors (like temporary disconnections) should be handled as toast notifications
+      if (error.includes('Failed to connect') || error.includes('Connection refused') || error.includes('Network error')) {
+        setError(error);
+      } else {
+        // For non-critical WebSocket errors, just show a toast notification
+        toast.error("Erreur de connexion WebSocket");
+      }
     },
     // Only enable WebSocket if there are multiple collaborators and we have a resolved imageID
     enabled: hasMultipleCollaborators && !!resolvedImageID,
@@ -189,7 +196,6 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     } catch (error) {
       console.error('Error loading collaborators:', error);
       toast.error("Erreur lors du chargement des collaborateurs");
-      setError('Failed to load collaborators');
     }
   };
 
@@ -202,7 +208,6 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     } catch (error) {
       console.error('Error loading messages:', error);
       toast.error("Erreur lors du chargement des messages");
-      setError('Failed to load messages');
     } finally {
       setLoading(false);
     }
@@ -238,7 +243,6 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     } catch (error) {
       console.error('Error accepting collaboration:', error);
       toast.error("Erreur lors de l'acceptation de la collaboration");
-      setError('Failed to accept collaboration');
     } finally {
       setIsAccepting(null);
     }
@@ -253,7 +257,6 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     } catch (error) {
       console.error('Error rejecting collaboration:', error);
       toast.error("Erreur lors du rejet de la collaboration");
-      setError('Failed to reject collaboration');
     } finally {
       setIsRejecting(null);
     }
@@ -283,7 +286,6 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error("Erreur lors de l'envoi du message");
-      setError('Failed to send message');
     } finally {
       setIsSending(false);
     }
@@ -320,14 +322,12 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
       
       if (!user) {
         toast.error("Utilisateur non trouvé avec cet email");
-        setError('User not found with this email');
         return;
       }
 
       // Check if the user is a radiologist
       if (user.role !== 'RADIOLOGUE') {
         toast.error("Vous ne pouvez inviter que des radiologues à collaborer");
-        setError('You can only invite radiologists to collaborate');
         return;
       }
 
@@ -345,7 +345,7 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
       setActiveTab('pending');
     } catch (error) {
       console.error('Error inviting collaborator:', error);
-      setError('Failed to invite collaborator');
+      toast.error('Erreur lors de l\'envoi de l\'invitation');
     } finally {
       setIsInviting(false);
     }
