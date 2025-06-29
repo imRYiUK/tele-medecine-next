@@ -12,6 +12,7 @@ import { notificationService, NotificationRecipient } from '@/lib/services/notif
 import { formatDistanceToNow } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
+import { toast } from 'sonner';
 
 // Helper function to safely parse dates
 const parseDate = (dateString: string | Date | number): Date => {
@@ -205,11 +206,22 @@ export default function NotificationWidget() {
 
   const handleMarkAllAsRead = async () => {
     try {
+      // Optimistically update UI
+      setNotifications(prev => prev.map(notif => ({ ...notif, estLu: true })));
+      setUnreadCount(0);
+      
+      // Send API request in background
       await notificationService.markAllAsRead();
       // Note: State will be updated by the WebSocket 'all_notifications_read' event
       // No need to update state here to avoid duplicate updates
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
+      // Revert optimistic update on error
+      loadNotifications();
+      
+      // Show error message to user
+      const errorMessage = error instanceof Error ? error.message : 'Erreur lors du marquage des notifications';
+      toast.error(errorMessage);
     }
   };
 
@@ -426,24 +438,6 @@ export default function NotificationWidget() {
                   </div>
                 )}
               </ScrollArea>
-              
-              {/* View All Button */}
-              {notifications.length > 0 && (
-                <div className="border-t p-3">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-full text-sm text-gray-600 hover:text-gray-900"
-                    onClick={() => {
-                      // TODO: Navigate to full notifications page
-                      console.log('Navigate to all notifications');
-                      setIsOpen(false);
-                    }}
-                  >
-                    Voir toutes les notifications
-                  </Button>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>

@@ -84,8 +84,22 @@ class NotificationService {
 
   // Mark all notifications as read
   async markAllAsRead(): Promise<{ count: number }> {
-    const response = await api.post('/notifications/read-all');
-    return response.data;
+    try {
+      const response = await api.post('/notifications/read-all');
+      return response.data;
+    } catch (error: any) {
+      console.error('Error in markAllAsRead:', error);
+      if (error.response?.status === 404) {
+        throw new Error('Endpoint not found');
+      }
+      if (error.response?.status === 403) {
+        throw new Error('Unauthorized');
+      }
+      if (error.response?.status === 500) {
+        throw new Error('Server error');
+      }
+      throw error;
+    }
   }
 
   // Delete a notification
