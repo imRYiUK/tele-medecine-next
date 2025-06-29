@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usersService, CreateUserDto } from "@/lib/services/users.service";
 import { Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { toast } from 'sonner';
 
 const roles = [
   { label: "Admin", value: "ADMINISTRATEUR" },
@@ -20,7 +21,6 @@ export function AdminUserFormDialog({ onUserCreated }: { onUserCreated: () => vo
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<CreateUserDto>({
     nom: "",
     prenom: "",
@@ -43,7 +43,6 @@ export function AdminUserFormDialog({ onUserCreated }: { onUserCreated: () => vo
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       await usersService.create({ ...form, etablissementID: user?.etablissementID });
       setOpen(false);
@@ -57,9 +56,11 @@ export function AdminUserFormDialog({ onUserCreated }: { onUserCreated: () => vo
         password: "",
         etablissementID: user?.etablissementID,
       });
+      toast.success('Utilisateur créé avec succès');
       onUserCreated();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur lors de la création");
+      const errorMessage = err?.response?.data?.message || "Erreur lors de la création";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -95,8 +96,7 @@ export function AdminUserFormDialog({ onUserCreated }: { onUserCreated: () => vo
             </SelectContent>
           </Select>
           <Input name="password" placeholder="Mot de passe" type="password" value={form.password} onChange={handleChange} required minLength={6} />
-          <div className="text-xs text-gray-500">Établissement : <span className="font-semibold">{user?.etablissementID || "-"}</span></div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
+          <div className="text-xs text-gray-500">Établissement : <span className="font-semibold">{user?.etablissementID || "-"}</span></div>
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={loading}>Annuler</Button>

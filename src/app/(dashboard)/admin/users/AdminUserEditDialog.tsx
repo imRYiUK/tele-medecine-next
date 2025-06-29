@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { usersService, UpdateUserDto, User } from "@/lib/services/users.service";
 import { Loader2, Pencil } from "lucide-react";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { toast } from 'sonner';
 
 const roles = [
   { label: "Admin", value: "ADMINISTRATEUR" },
@@ -20,7 +21,6 @@ export function AdminUserEditDialog({ userToEdit, onUserUpdated }: { userToEdit:
   const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<UpdateUserDto>({
     nom: userToEdit.nom,
     prenom: userToEdit.prenom,
@@ -42,13 +42,14 @@ export function AdminUserEditDialog({ userToEdit, onUserUpdated }: { userToEdit:
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       await usersService.update(userToEdit.utilisateurID, { ...form, etablissementID: user?.etablissementID });
       setOpen(false);
+      toast.success('Utilisateur mis à jour avec succès');
       onUserUpdated();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur lors de la modification");
+      const errorMessage = err?.response?.data?.message || "Erreur lors de la modification";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -82,7 +83,6 @@ export function AdminUserEditDialog({ userToEdit, onUserUpdated }: { userToEdit:
             </SelectContent>
           </Select>
           <div className="text-xs text-gray-500">Établissement : <span className="font-semibold">{user?.etablissementID || "-"}</span></div>
-          {error && <div className="text-red-600 text-sm">{error}</div>}
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={loading}>Annuler</Button>

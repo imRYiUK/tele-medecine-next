@@ -8,6 +8,7 @@ import { etablissementsService, CreateEtablissementDto } from "@/lib/services/et
 import { Loader2, Plus } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { toast } from 'sonner';
 
 const types = [
   { label: "Hôpital", value: "HOPITAL" },
@@ -20,7 +21,6 @@ const types = [
 export function EtablissementFormDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [enableOrthanc, setEnableOrthanc] = useState(false);
   const [form, setForm] = useState<CreateEtablissementDto>({
     nom: "",
@@ -58,7 +58,6 @@ export function EtablissementFormDialog({ onCreated }: { onCreated: () => void }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       const submitData = { ...form };
       if (!enableOrthanc) {
@@ -81,9 +80,11 @@ export function EtablissementFormDialog({ onCreated }: { onCreated: () => void }
         estActif: true,
       });
       setEnableOrthanc(false);
+      toast.success('Établissement créé avec succès');
       onCreated();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur lors de la création");
+      const errorMessage = err?.response?.data?.message || "Erreur lors de la création";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -178,7 +179,6 @@ export function EtablissementFormDialog({ onCreated }: { onCreated: () => void }
             )}
           </div>
 
-          {error && <div className="text-red-600 text-sm">{error}</div>}
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={loading}>Annuler</Button>

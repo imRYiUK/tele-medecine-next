@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Stethoscope, Shield } from "lucide-react"
+import { toast } from 'sonner';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalide'),
@@ -23,7 +24,6 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const { login } = useAuth();
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
 
   const {
     register,
@@ -35,12 +35,21 @@ export function LoginForm() {
 
   const onSubmit = async (data: LoginFormData) => {
     try {
-      setError(null);
       const response = await login(data);
+      toast.success('Connexion réussie ! Redirection en cours...');
       const redirectPath = getRoleBasedRedirect(response.user.role);
       router.push(redirectPath);
-    } catch (err) {
-      setError('Email ou mot de passe incorrect');
+    } catch (err: any) {
+      // Handle different types of errors
+      let errorMessage = 'Email ou mot de passe incorrect';
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.message) {
+        errorMessage = err.message;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 
@@ -61,21 +70,6 @@ export function LoginForm() {
 
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            {error && (
-              <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg className="h-5 w-5 text-red-500" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <p className="text-sm text-red-700">{error}</p>
-                  </div>
-                </div>
-              </div>
-            )}
-
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                 Adresse email

@@ -8,6 +8,7 @@ import { etablissementsService, UpdateEtablissementDto, Etablissement } from "@/
 import { Loader2, Pencil } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { toast } from 'sonner';
 
 const types = [
   { label: "Hôpital", value: "HOPITAL" },
@@ -20,7 +21,6 @@ const types = [
 export function EtablissementEditDialog({ etab, onUpdated }: { etab: Etablissement; onUpdated: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [enableOrthanc, setEnableOrthanc] = useState(!!(etab.orthancUrl || etab.orthancLogin || etab.orthancPassword));
   const [form, setForm] = useState<UpdateEtablissementDto>({
     nom: etab.nom,
@@ -61,7 +61,6 @@ export function EtablissementEditDialog({ etab, onUpdated }: { etab: Etablisseme
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       const submitData = { ...form };
       if (!enableOrthanc) {
@@ -72,9 +71,11 @@ export function EtablissementEditDialog({ etab, onUpdated }: { etab: Etablisseme
       }
       await etablissementsService.update(etab.etablissementID, submitData);
       setOpen(false);
+      toast.success('Établissement mis à jour avec succès');
       onUpdated();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur lors de la modification");
+      const errorMessage = err?.response?.data?.message || "Erreur lors de la modification";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -167,7 +168,6 @@ export function EtablissementEditDialog({ etab, onUpdated }: { etab: Etablisseme
             )}
           </div>
 
-          {error && <div className="text-red-600 text-sm">{error}</div>}
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={loading}>Annuler</Button>

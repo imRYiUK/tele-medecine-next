@@ -9,6 +9,7 @@ import { usersService, UpdateUserDto, User } from "@/lib/services/users.service"
 import { etablissementsService, Etablissement } from "@/lib/services/etablissements.service";
 import { Loader2, Pencil } from "lucide-react";
 import { EtablissementCombobox } from "./EtablissementCombobox";
+import { toast } from 'sonner';
 
 const roles = [
   { label: "Super Admin", value: "SUPER_ADMIN" },
@@ -22,7 +23,6 @@ const roles = [
 export function UserEditDialog({ user, onUserUpdated }: { user: User; onUserUpdated: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<UpdateUserDto>({
     nom: user.nom,
     prenom: user.prenom,
@@ -55,13 +55,14 @@ export function UserEditDialog({ user, onUserUpdated }: { user: User; onUserUpda
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       await usersService.update(user.utilisateurID, form);
       setOpen(false);
+      toast.success('Utilisateur mis à jour avec succès');
       onUserUpdated();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur lors de la modification");
+      const errorMessage = err?.response?.data?.message || "Erreur lors de la modification";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -95,7 +96,6 @@ export function UserEditDialog({ user, onUserUpdated }: { user: User; onUserUpda
             </SelectContent>
           </Select>
           <EtablissementCombobox value={form.etablissementID} onChange={handleEtabChange} disabled={loading} />
-          {error && <div className="text-red-600 text-sm">{error}</div>}
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={loading}>Annuler</Button>

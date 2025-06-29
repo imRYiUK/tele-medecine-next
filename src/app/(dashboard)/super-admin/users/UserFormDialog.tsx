@@ -9,6 +9,7 @@ import { usersService, CreateUserDto } from "@/lib/services/users.service";
 import { etablissementsService, Etablissement } from "@/lib/services/etablissements.service";
 import { Loader2 } from "lucide-react";
 import { EtablissementCombobox } from "./EtablissementCombobox";
+import { toast } from 'sonner';
 
 const roles = [
   { label: "Super Admin", value: "SUPER_ADMIN" },
@@ -22,7 +23,6 @@ const roles = [
 export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void }) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [form, setForm] = useState<CreateUserDto>({
     nom: "",
     prenom: "",
@@ -56,7 +56,6 @@ export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setError(null);
     try {
       await usersService.create(form);
       setOpen(false);
@@ -70,9 +69,11 @@ export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void })
         password: "",
         etablissementID: undefined,
       });
+      toast.success('Utilisateur créé avec succès');
       onUserCreated();
     } catch (err: any) {
-      setError(err?.response?.data?.message || "Erreur lors de la création");
+      const errorMessage = err?.response?.data?.message || "Erreur lors de la création";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -109,7 +110,6 @@ export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void })
           </Select>
           <Input name="password" placeholder="Mot de passe" type="password" value={form.password} onChange={handleChange} required minLength={6} />
           <EtablissementCombobox value={form.etablissementID} onChange={handleEtabChange} disabled={loading} />
-          {error && <div className="text-red-600 text-sm">{error}</div>}
           <DialogFooter>
             <DialogClose asChild>
               <Button type="button" variant="outline" disabled={loading}>Annuler</Button>
