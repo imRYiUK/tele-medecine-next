@@ -522,12 +522,21 @@ export default function CollaborationsPage() {
                       </div>
 
                       <div className="flex items-center space-x-2">
-                        <Link href={`/radiologue/dicom/image/${collaboration.image.sopInstanceUID}`}>
-                          <Button variant="outline" size="sm">
-                            <Eye className="mr-2 h-4 w-4" />
-                            Voir l'image
-                          </Button>
-                        </Link>
+                        {/* Only show "Voir l'image" button if the user is the inviter (they still have access) */}
+                        {collaboration.inviterID === currentUserId && (
+                          <Link href={`/radiologue/dicom/image/${collaboration.image.sopInstanceUID}`}>
+                            <Button variant="outline" size="sm">
+                              <Eye className="mr-2 h-4 w-4" />
+                              Voir l'image
+                            </Button>
+                          </Link>
+                        )}
+                        {/* Show a message for invitees who rejected the invitation */}
+                        {collaboration.inviteeID === currentUserId && (
+                          <div className="text-sm text-gray-500 italic">
+                            Accès refusé - Vous avez rejeté cette invitation
+                          </div>
+                        )}
                       </div>
                     </div>
                   );

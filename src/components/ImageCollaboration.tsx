@@ -325,6 +325,12 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
         return;
       }
 
+      // Check if the user is trying to invite themselves
+      if (user.utilisateurID === currentUserId) {
+        toast.error("Vous ne pouvez pas vous inviter vous-même");
+        return;
+      }
+
       // Check if the user is a radiologist
       if (user.role !== 'RADIOLOGUE') {
         toast.error("Vous ne pouvez inviter que des radiologues à collaborer");
@@ -343,9 +349,28 @@ export default function ImageCollaboration({ imageId, sopInstanceUID, currentUse
       setInviteEmail("");
       await loadPendingCollaborations();
       setActiveTab('pending');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error inviting collaborator:', error);
-      toast.error('Erreur lors de l\'envoi de l\'invitation');
+      
+      // Handle specific error cases
+      if (error.response?.data?.message) {
+        const errorMessage = error.response.data.message;
+        if (errorMessage.includes('You cannot invite yourself') || errorMessage.includes('cannot invite themselves')) {
+          toast.error("Vous ne pouvez pas vous inviter vous-même");
+        } else if (errorMessage.includes('already a collaborator')) {
+          toast.error("Ce radiologue est déjà collaborateur sur cette image");
+        } else if (errorMessage.includes('invitation is already pending')) {
+          toast.error("Une invitation est déjà en attente pour ce radiologue");
+        } else if (errorMessage.includes('You can only invite radiologists')) {
+          toast.error("Vous ne pouvez inviter que des radiologues à collaborer");
+        } else if (errorMessage.includes('do not have permission')) {
+          toast.error("Vous n'avez pas la permission d'inviter des collaborateurs sur cette image");
+        } else {
+          toast.error(errorMessage);
+        }
+      } else {
+        toast.error('Erreur lors de l\'envoi de l\'invitation');
+      }
     } finally {
       setIsInviting(false);
     }
