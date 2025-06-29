@@ -72,7 +72,7 @@ export default function RadiologueDashboard() {
     }
     
     if (estAnalyse) {
-      return <Badge variant="outline">Terminé</Badge>;
+      return <Badge variant="default">Analysé</Badge>;
     } else {
       return <Badge variant="secondary">En attente</Badge>;
     }
@@ -104,7 +104,7 @@ export default function RadiologueDashboard() {
       </div>
 
       {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">En attente</CardTitle>
@@ -118,23 +118,12 @@ export default function RadiologueDashboard() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En cours</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">{stats?.examensEnCours || 0}</div>
-            <p className="text-xs text-muted-foreground">Examens en cours d'analyse</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Terminés</CardTitle>
+            <CardTitle className="text-sm font-medium">Analysés</CardTitle>
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{stats?.examensTermines || 0}</div>
-            <p className="text-xs text-muted-foreground">Examens terminés</p>
+            <p className="text-xs text-muted-foreground">Examens analysés</p>
           </CardContent>
         </Card>
 
@@ -220,10 +209,10 @@ export default function RadiologueDashboard() {
                 Examiner les examens en attente
               </Button>
             </Link>
-            <Link href="/radiologue/examens?status=URGENT">
+            <Link href="/radiologue/examens?status=ANALYSE">
               <Button className="w-full justify-start" variant="outline">
-                <AlertTriangle className="mr-2 h-4 w-4" />
-                Voir les urgences
+                <CheckCircle className="mr-2 h-4 w-4" />
+                Voir les examens analysés
               </Button>
             </Link>
             <Link href="/radiologue/dicom">

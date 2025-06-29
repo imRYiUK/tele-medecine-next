@@ -288,10 +288,8 @@ export default function RadiologueExamDetail() {
     switch (status) {
       case 'EN_ATTENTE':
         return <Badge variant="secondary">En attente</Badge>;
-      case 'EN_COURS':
-        return <Badge variant="default">En cours</Badge>;
-      case 'TERMINE':
-        return <Badge variant="outline">Terminé</Badge>;
+      case 'ANALYSE':
+        return <Badge variant="default">Analysé</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }

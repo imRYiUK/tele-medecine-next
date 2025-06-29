@@ -103,11 +103,23 @@ export default function NouvelExamen() {
       
       // Fetch patients from localhost:3001/api/patients
       const patientsResponse = await api.get('/patients');
-      setPatients(patientsResponse.data);
+      
+      // Remove duplicates based on patientID
+      const uniquePatients = patientsResponse.data.filter((patient: Patient, index: number, self: Patient[]) => 
+        index === self.findIndex((p) => p.patientID === patient.patientID)
+      );
+      
+      setPatients(uniquePatients);
 
       // Fetch exam types from localhost:3001/api/examens-medicaux/types
       const examTypesResponse = await api.get('/examens-medicaux/types');
-      setExamTypes(examTypesResponse.data);
+      
+      // Remove duplicates based on nom and categorie combination
+      const uniqueExamTypes = examTypesResponse.data.filter((examType: TypeExamen, index: number, self: TypeExamen[]) => 
+        index === self.findIndex((t) => t.nom === examType.nom && t.categorie === examType.categorie)
+      );
+      
+      setExamTypes(uniqueExamTypes);
     } catch (error) {
       console.error('Error fetching initial data:', error);
     } finally {
@@ -353,7 +365,10 @@ export default function NouvelExamen() {
                   <SelectContent>
                     {examTypes.map((examType) => (
                       <SelectItem key={examType.typeExamenID} value={examType.typeExamenID}>
-                        {examType.nom} - {examType.categorie}
+                        <div className="flex flex-col">
+                          <span className="font-medium">{examType.nom}</span>
+                          <span className="text-xs text-gray-500">{examType.categorie}</span>
+                        </div>
                       </SelectItem>
                     ))}
                   </SelectContent>

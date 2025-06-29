@@ -45,8 +45,16 @@ interface Exam {
   canEdit?: boolean;
 }
 
+interface TypeExamen {
+  typeExamenID: string;
+  nomType: string;
+  description: string;
+  categorie: string;
+}
+
 export default function RadiologueExams() {
   const [exams, setExams] = useState<Exam[]>([]);
+  const [examTypes, setExamTypes] = useState<TypeExamen[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("TOUS");
@@ -61,8 +69,21 @@ export default function RadiologueExams() {
   }, [searchParams]);
 
   useEffect(() => {
+    fetchExamTypes();
+  }, []);
+
+  useEffect(() => {
     fetchExams();
   }, [statusFilter, categoryFilter, searchTerm]);
+
+  const fetchExamTypes = async () => {
+    try {
+      const types = await radiologistApi.getTypeExamens();
+      setExamTypes(types);
+    } catch (error) {
+      console.error('Error fetching exam types:', error);
+    }
+  };
 
   const fetchExams = async () => {
     try {
@@ -141,10 +162,8 @@ export default function RadiologueExams() {
     switch (status) {
       case 'EN_ATTENTE':
         return <Badge variant="secondary">En attente</Badge>;
-      case 'EN_COURS':
-        return <Badge variant="default">En cours</Badge>;
-      case 'TERMINE':
-        return <Badge variant="outline">Terminé</Badge>;
+      case 'ANALYSE':
+        return <Badge variant="default">Analysé</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -221,9 +240,7 @@ export default function RadiologueExams() {
               <SelectContent>
                 <SelectItem value="TOUS">Tous les statuts</SelectItem>
                 <SelectItem value="EN_ATTENTE">En attente</SelectItem>
-                <SelectItem value="EN_COURS">En cours</SelectItem>
-                <SelectItem value="TERMINE">Terminé</SelectItem>
-                <SelectItem value="URGENT">Urgent</SelectItem>
+                <SelectItem value="ANALYSE">Analysé</SelectItem>
               </SelectContent>
             </Select>
 
@@ -233,11 +250,11 @@ export default function RadiologueExams() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="ALL">Toutes les catégories</SelectItem>
-                <SelectItem value="RADIOGRAPHIE">Radiographie</SelectItem>
-                <SelectItem value="SCANNER">Scanner</SelectItem>
-                <SelectItem value="IRM">IRM</SelectItem>
-                <SelectItem value="ECHOGRAPHIE">Échographie</SelectItem>
-                <SelectItem value="MAMMOGRAPHIE">Mammographie</SelectItem>
+                {Array.from(new Set(examTypes.map(type => type.categorie))).map((categorie) => (
+                  <SelectItem key={categorie} value={categorie}>
+                    {categorie}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
