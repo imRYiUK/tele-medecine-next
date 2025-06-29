@@ -2,7 +2,10 @@ import { api } from '@/lib/api';
 
 export interface RendezVous {
   rendezVousID: string;
-  dateHeure: string;
+  dateHeure?: string;
+  date?: string;
+  debutTime?: string;
+  endTime?: string;
   motif: string;
   patient?: {
     patientID: string;

@@ -27,19 +27,58 @@ export const receptionnisteService = {
       // Calculate statistics
       const today = new Date().toISOString().slice(0, 10);
       const todayAppointments = appointmentsData.filter(apt => {
-        const appointmentDate = new Date(apt.dateHeure).toISOString().slice(0, 10);
-        return appointmentDate === today;
+        // Support both new and old date formats
+        if (apt.date) {
+          return apt.date === today;
+        } else if (apt.dateHeure && apt.dateHeure.trim() !== '') {
+          try {
+            const appointmentDate = new Date(apt.dateHeure as string).toISOString().slice(0, 10);
+            return appointmentDate === today;
+          } catch (error) {
+            console.warn('Invalid dateHeure:', apt.dateHeure);
+            return false;
+          }
+        }
+        return false;
       });
       
       const thisWeek = getWeekDates();
       const thisWeekAppointments = appointmentsData.filter(apt => {
-        const appointmentDate = new Date(apt.dateHeure).toISOString().slice(0, 10);
-        return thisWeek.includes(appointmentDate);
+        // Support both new and old date formats
+        if (apt.date) {
+          return thisWeek.includes(apt.date);
+        } else if (apt.dateHeure && apt.dateHeure.trim() !== '') {
+          try {
+            const appointmentDate = new Date(apt.dateHeure as string).toISOString().slice(0, 10);
+            return thisWeek.includes(appointmentDate);
+          } catch (error) {
+            console.warn('Invalid dateHeure:', apt.dateHeure);
+            return false;
+          }
+        }
+        return false;
       });
 
       const pendingAppointments = appointmentsData.filter(apt => {
-        const appointmentDateTime = new Date(apt.dateHeure);
-        return appointmentDateTime > new Date();
+        // Support both new and old date formats
+        if (apt.date && apt.debutTime) {
+          try {
+            const appointmentDateTime = new Date(`${apt.date}T${apt.debutTime}`);
+            return appointmentDateTime > new Date();
+          } catch (error) {
+            console.warn('Invalid appointment date:', apt);
+            return false;
+          }
+        } else if (apt.dateHeure && apt.dateHeure.trim() !== '') {
+          try {
+            const appointmentDateTime = new Date(apt.dateHeure as string);
+            return appointmentDateTime > new Date();
+          } catch (error) {
+            console.warn('Invalid dateHeure:', apt.dateHeure);
+            return false;
+          }
+        }
+        return false;
       });
 
       const stats: ReceptionnisteStats = {
@@ -52,12 +91,46 @@ export const receptionnisteService = {
       // Get recent appointments (next 5 upcoming)
       const recentAppointments = appointmentsData
         .filter(apt => {
-          const appointmentDateTime = new Date(apt.dateHeure);
-          return appointmentDateTime >= new Date();
+          // Support both new and old date formats
+          if (apt.date && apt.debutTime) {
+            try {
+              const appointmentDateTime = new Date(`${apt.date}T${apt.debutTime}`);
+              return appointmentDateTime >= new Date();
+            } catch (error) {
+              console.warn('Invalid appointment date:', apt);
+              return false;
+            }
+          } else if (apt.dateHeure && apt.dateHeure.trim() !== '') {
+            try {
+              const appointmentDateTime = new Date(apt.dateHeure as string);
+              return appointmentDateTime >= new Date();
+            } catch (error) {
+              console.warn('Invalid dateHeure:', apt.dateHeure);
+              return false;
+            }
+          }
+          return false;
         })
         .sort((a, b) => {
-          const dateA = new Date(a.dateHeure);
-          const dateB = new Date(b.dateHeure);
+          // Support both new and old date formats for sorting
+          let dateA: Date, dateB: Date;
+          
+          if (a.date && a.debutTime) {
+            dateA = new Date(`${a.date}T${a.debutTime}`);
+          } else if (a.dateHeure && a.dateHeure.trim() !== '') {
+            dateA = new Date(a.dateHeure as string);
+          } else {
+            dateA = new Date(0); // Invalid date
+          }
+          
+          if (b.date && b.debutTime) {
+            dateB = new Date(`${b.date}T${b.debutTime}`);
+          } else if (b.dateHeure && b.dateHeure.trim() !== '') {
+            dateB = new Date(b.dateHeure as string);
+          } else {
+            dateB = new Date(0); // Invalid date
+          }
+          
           return dateA.getTime() - dateB.getTime();
         })
         .slice(0, 5);

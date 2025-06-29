@@ -47,22 +47,52 @@ export default function ReceptionnisteDashboard() {
   }, []);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('fr-FR', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric'
-    });
+    try {
+      return new Date(dateString).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.warn('Invalid date string:', dateString);
+      return 'Date invalide';
+    }
   };
 
   const formatTime = (dateString: string) => {
-    return new Date(dateString).toLocaleTimeString('fr-FR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    try {
+      return new Date(dateString).toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.warn('Invalid time string:', dateString);
+      return 'Heure invalide';
+    }
   };
 
   const getAppointmentStatus = (appointment: RendezVous) => {
-    const appointmentDateTime = new Date(appointment.dateHeure);
+    let appointmentDateTime: Date;
+    
+    // Support both new and old date formats
+    if (appointment.date && appointment.debutTime) {
+      try {
+        appointmentDateTime = new Date(`${appointment.date}T${appointment.debutTime}`);
+      } catch (error) {
+        console.warn('Invalid appointment date:', appointment);
+        return <Badge variant="outline">Erreur</Badge>;
+      }
+    } else if (appointment.dateHeure && appointment.dateHeure.trim() !== '') {
+      try {
+        appointmentDateTime = new Date(appointment.dateHeure);
+      } catch (error) {
+        console.warn('Invalid dateHeure:', appointment.dateHeure);
+        return <Badge variant="outline">Erreur</Badge>;
+      }
+    } else {
+      return <Badge variant="outline">Erreur</Badge>;
+    }
+    
     const now = new Date();
     
     if (appointmentDateTime < now) {
@@ -71,6 +101,49 @@ export default function ReceptionnisteDashboard() {
       return <Badge variant="destructive">Urgent</Badge>;
     } else {
       return <Badge variant="default">À venir</Badge>;
+    }
+  };
+
+  const getAppointmentDateTime = (appointment: RendezVous) => {
+    // Support both new and old date formats
+    if (appointment.date && appointment.debutTime) {
+      try {
+        const dateTime = new Date(`${appointment.date}T${appointment.debutTime}`);
+        return {
+          date: dateTime.toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          time: dateTime.toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        };
+      } catch (error) {
+        console.warn('Invalid appointment date:', appointment);
+        return { date: 'Date invalide', time: 'Heure invalide' };
+      }
+    } else if (appointment.dateHeure && appointment.dateHeure.trim() !== '') {
+      try {
+        const dateTime = new Date(appointment.dateHeure);
+        return {
+          date: dateTime.toLocaleDateString('fr-FR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          }),
+          time: dateTime.toLocaleTimeString('fr-FR', {
+            hour: '2-digit',
+            minute: '2-digit'
+          })
+        };
+      } catch (error) {
+        console.warn('Invalid dateHeure:', appointment.dateHeure);
+        return { date: 'Date invalide', time: 'Heure invalide' };
+      }
+    } else {
+      return { date: 'Date invalide', time: 'Heure invalide' };
     }
   };
 
@@ -205,7 +278,7 @@ export default function ReceptionnisteDashboard() {
                         <div className="flex items-center space-x-2 mt-1">
                           <Clock className="h-3 w-3 text-gray-400" />
                           <span className="text-xs text-gray-500">
-                            {formatDate(appointment.dateHeure)} à {formatTime(appointment.dateHeure)}
+                            {getAppointmentDateTime(appointment).date} à {getAppointmentDateTime(appointment).time}
                           </span>
                         </div>
                       </div>
