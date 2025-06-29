@@ -6,8 +6,21 @@ import { Toaster } from 'sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata = {
-  title: 'Télémédecine Sénégal',
+  title: 'Sunusante - Télémédecine Sénégal',
   description: 'Plateforme de télémédecine et dossier médical partagé au Sénégal',
+  icons: {
+    icon: [
+      {
+        url: '/favicon.ico',
+        sizes: 'any',
+      },
+      {
+        url: '/icon.svg',
+        type: 'image/svg+xml',
+      },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({

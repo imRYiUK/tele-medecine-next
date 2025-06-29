@@ -20,6 +20,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import NotificationWidget from "@/components/NotificationWidget";
+import SunusanteLogo from "@/components/ui/logo";
 
 const navigation = [
   { name: "Dashboard", href: "/radiologue", icon: Activity },
@@ -51,7 +52,7 @@ export default function RadiologueLayout({
           <div className="fixed inset-0" style={{ background: 'rgba(128,128,128,0.3)' }} onClick={() => setSidebarOpen(false)} />
           <div className="fixed inset-y-0 left-0 flex w-64 flex-col bg-white">
             <div className="flex h-16 items-center justify-between px-4">
-              <span className="text-xl font-semibold text-blue-600">Radiologue</span>
+              <SunusanteLogo size="sm" />
               <button onClick={() => setSidebarOpen(false)}>
                 <X className="h-6 w-6 text-gray-500" />
               </button>
@@ -95,7 +96,7 @@ export default function RadiologueLayout({
         <div className="hidden lg:flex lg:w-64 lg:flex-col">
           <div className="flex min-h-0 flex-1 flex-col border-r border-gray-200 bg-white">
             <div className="flex h-16 items-center px-4">
-              <span className="text-xl font-semibold text-blue-600">Radiologue</span>
+              <SunusanteLogo size="sm" />
             </div>
             <nav className="flex-1 space-y-1 px-2 py-4">
               {navigation.map((item) => {
