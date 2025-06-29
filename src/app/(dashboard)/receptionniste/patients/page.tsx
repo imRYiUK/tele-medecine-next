@@ -225,10 +225,9 @@ export default function ReceptionnistePatientsPage() {
       </div>
       <div className="overflow-x-auto rounded-lg border bg-white shadow">
         <Table>
-          <TableHeader className="sticky top-0 bg-white z-10">
+          <TableHeader>
             <TableRow>
               <TableHead>Nom & Prénom</TableHead>
-              <TableHead>Prénom</TableHead>
               <TableHead>Email</TableHead>
               <TableHead>Téléphone</TableHead>
             </TableRow>
@@ -236,13 +235,13 @@ export default function ReceptionnistePatientsPage() {
           <TableBody>
             {loading ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8">
+                <TableCell colSpan={3} className="text-center py-8">
                   <Loader2 className="mx-auto animate-spin" />
                 </TableCell>
               </TableRow>
             ) : filteredPatients.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={3} className="text-center py-8 text-gray-500">
                   Aucun patient trouvé.
                 </TableCell>
               </TableRow>
@@ -254,7 +253,6 @@ export default function ReceptionnistePatientsPage() {
                       {patient.nom} {patient.prenom}
                     </Link>
                   </TableCell>
-                  <TableCell>{patient.prenom}</TableCell>
                   <TableCell>{patient.email}</TableCell>
                   <TableCell>{patient.telephone}</TableCell>
                 </TableRow>
