@@ -236,13 +236,6 @@ export default function CollaborationsPage() {
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <Link href={`/radiologue/dicom/image/${collaboration.image.sopInstanceUID}`}>
-                        <Button variant="outline" size="sm">
-                          <Eye className="mr-2 h-4 w-4" />
-                          Voir l'image
-                        </Button>
-                      </Link>
-                      
                       {collaboration.inviteeID === currentUserId && (
                         <>
                           <Button
