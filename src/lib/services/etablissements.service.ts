@@ -52,11 +52,7 @@ export interface UpdateEtablissementDto {
 export const etablissementsService = {
   async getAll(): Promise<Etablissement[]> {
     const res = await api.get('/etablissements');
-    // Si le backend ne renvoie pas le nombre d'utilisateurs, il faudra le calculer côté front ou adapter l'API
-    return res.data.map((e: any) => ({
-      ...e,
-      utilisateursCount: e._count?.utilisateurs ?? e.utilisateursCount ?? 0,
-    }));
+    return res.data;
   },
   async getById(id: string): Promise<Etablissement> {
     const res = await api.get(`/etablissements/${id}`);

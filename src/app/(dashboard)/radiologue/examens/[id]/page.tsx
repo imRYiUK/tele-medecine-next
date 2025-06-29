@@ -92,6 +92,7 @@ export default function RadiologueExamDetail() {
   const [canEdit, setCanEdit] = useState(false);
   const [permissionLoading, setPermissionLoading] = useState(true);
   const [deletingImage, setDeletingImage] = useState<string | null>(null);
+  const [accessDenied, setAccessDenied] = useState(false);
 
   useEffect(() => {
     if (examId) {
@@ -118,8 +119,12 @@ export default function RadiologueExamDetail() {
     try {
       const response = await api.get(`/examens-medicaux/${examId}`);
       setExam(response.data);
-    } catch (error) {
+      setAccessDenied(false);
+    } catch (error: any) {
       console.error('Error fetching exam details:', error);
+      if (error.response?.status === 403) {
+        setAccessDenied(true);
+      }
     }
   };
 
@@ -131,8 +136,12 @@ export default function RadiologueExamDetail() {
         setSelectedImage(response.data[0]);
         fetchMessages(response.data[0].id);
       }
-    } catch (error) {
+      setAccessDenied(false);
+    } catch (error: any) {
       console.error('Error fetching images:', error);
+      if (error.response?.status === 403) {
+        setAccessDenied(true);
+      }
     } finally {
       setLoading(false);
     }
@@ -296,6 +305,39 @@ export default function RadiologueExamDetail() {
     );
   }
 
+  if (accessDenied) {
+    return (
+      <div className="bg-gradient-to-br from-blue-50 to-white py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center space-x-4 mb-8">
+            <Link href="/radiologue/examens">
+              <Button variant="outline" size="sm" className="rounded-full shadow-sm">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Retour
+              </Button>
+            </Link>
+          </div>
+          
+          <div className="text-center py-12">
+            <div className="bg-white rounded-xl shadow-sm p-8 max-w-md mx-auto">
+              <Lock className="h-16 w-16 mx-auto mb-4 text-red-500" />
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Accès refusé</h2>
+              <p className="text-gray-600 mb-6">
+                Vous n'avez pas la permission de consulter cet examen. 
+                Vous devez être explicitement assigné à cet examen pour y avoir accès.
+              </p>
+              <Link href="/radiologue/examens">
+                <Button className="w-full">
+                  Retour aux examens
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!exam) {
     return (
       <div className="text-center py-12 bg-gradient-to-br from-blue-50 to-white">
@@ -455,7 +497,7 @@ export default function RadiologueExamDetail() {
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                     {images.map((image, index) => (
                       <div
-                        key={image.id}
+                        key={image.id || `image-${index}`}
                         className={`group relative bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 cursor-pointer overflow-hidden ${
                           selectedImage?.id === image.id
                             ? 'ring-2 ring-blue-500 shadow-lg'
