@@ -2,7 +2,7 @@
 import { useAuth } from "@/lib/hooks/useAuth";
 import ProfileForm from "@/components/ProfileForm";
 
-export default function RadiologueProfilePage() {
+export default function ReceptionnisteProfilePage() {
   const { user } = useAuth();
 
   if (!user) {
@@ -18,13 +18,13 @@ export default function RadiologueProfilePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-blue-700 tracking-tight">Mon Profil</h1>
+        <h1 className="text-3xl font-bold text-emerald-700 tracking-tight">Mon Profil</h1>
         <p className="text-gray-600 mt-1">
           Gérez vos informations personnelles et vos paramètres de sécurité.
         </p>
       </div>
       
-      <ProfileForm role={user.role} colorScheme="blue" />
+      <ProfileForm role={user.role} />
     </div>
   );
 } 

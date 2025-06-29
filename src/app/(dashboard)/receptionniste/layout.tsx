@@ -6,7 +6,7 @@ import {
   Users,
   Calendar,
   Activity,
-  Settings,
+  User,
   LogOut,
   Menu,
   X,
@@ -21,7 +21,7 @@ const navigation = [
   { name: "Dashboard", href: "/receptionniste", icon: Activity },
   { name: "Patients", href: "/receptionniste/patients", icon: Users },
   { name: "Rendez-vous", href: "/receptionniste/rendez-vous", icon: Calendar },
-  { name: "Paramètres", href: "/receptionniste/paramètres", icon: Settings },
+  { name: "Profil", href: "/receptionniste/profile", icon: User },
 ];
 
 export default function ReceptionnisteLayout({

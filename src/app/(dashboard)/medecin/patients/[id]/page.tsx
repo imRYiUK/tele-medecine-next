@@ -1,11 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { patientsService, Patient } from "@/lib/services/patients.service";
 import { consultationMedicaleService, ConsultationMedicale, PrescriptionDto } from "@/lib/services/consultation-medicale.service";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Loader2, X, Calendar, User, FileText, Pill } from "lucide-react";
+import { Loader2, X, Calendar, User, FileText, Pill, ArrowRight } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -13,14 +13,19 @@ import { toast } from "sonner";
 import { medicamentsService, MedicamentDto } from "@/lib/services/medicaments.service";
 import { Badge } from "@/components/ui/badge";
 
+// Local interface for display purposes
+interface PrescriptionWithDisplay extends PrescriptionDto {
+    medicamentNom?: string;
+}
+
 export default function MedecinPatientDetailPage() {
     const { id } = useParams();
+    const router = useRouter();
     const { user } = useAuth();
     const [patient, setPatient] = useState<Patient | null>(null);
     const [consultations, setConsultations] = useState<ConsultationMedicale[]>([]);
     const [loading, setLoading] = useState(true);
     const [showConsultDialog, setShowConsultDialog] = useState(false);
-    const [selectedConsultation, setSelectedConsultation] = useState<ConsultationMedicale | null>(null);
 
     useEffect(() => {
         if (id) {
@@ -47,27 +52,39 @@ export default function MedecinPatientDetailPage() {
         setShowConsultDialog(false);
     }
 
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                <Loader2 className="animate-spin w-8 h-8" />
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-6 p-6">
-            {loading ? (
-                <div className="flex justify-center items-center h-40">
-                    <Loader2 className="animate-spin w-8 h-8 text-emerald-600" />
-                </div>
-            ) : patient ? (
+        <div className="space-y-6">
+            {patient ? (
                 <>
-                    <div className="bg-white rounded shadow p-4 border space-y-2">
-                        <h2 className="text-2xl font-bold text-emerald-700 mb-2">{patient.prenom} {patient.nom}</h2>
-                        <div>Email: {patient.email}</div>
-                        <div>Téléphone: {patient.telephone}</div>
-                        <div>Date de naissance: {patient.dateNaissance}</div>
-                        <div>Groupe sanguin: {patient.groupeSanguin}</div>
-                        <div>Genre: {patient.genre}</div>
+                    <div className="bg-white rounded shadow p-4 border">
+                        <h2 className="text-2xl font-bold mb-4">Détails du patient</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <p><strong>Nom:</strong> {patient.nom}</p>
+                                <p><strong>Prénom:</strong> {patient.prenom}</p>
+                                <p><strong>Date de naissance:</strong> {patient.dateNaissance}</p>
+                            </div>
+                            <div>
+                                <p><strong>Email:</strong> {patient.email}</p>
+                                <p><strong>Téléphone:</strong> {patient.telephone}</p>
+                                <p><strong>Adresse:</strong> {patient.adresse}</p>
+                            </div>
+                        </div>
                         <div className="mt-4">
                             <Button onClick={() => setShowConsultDialog(true)}>
                                 Nouvelle consultation
                             </Button>
                         </div>
                     </div>
+
                     <div className="bg-white rounded shadow p-4 border space-y-2">
                         <h3 className="text-xl font-semibold mb-2">Consultations avec ce patient</h3>
                         {consultations.length === 0 ? (
@@ -77,8 +94,8 @@ export default function MedecinPatientDetailPage() {
                                 {consultations.map(consult => (
                                     <div
                                         key={consult.consultationID}
-                                        className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-                                        onClick={() => setSelectedConsultation(consult)}
+                                        className="border rounded-lg p-4 hover:bg-gray-50 cursor-pointer transition-colors group"
+                                        onClick={() => router.push(`/medecin/consultation/${consult.consultationID}`)}
                                     >
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
@@ -90,17 +107,30 @@ export default function MedecinPatientDetailPage() {
                                                     <div className="text-sm text-gray-600">Motif: {consult.motif}</div>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
-                                                {consult.estTelemedicine && (
-                                                    <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                                                        Télémédecine
-                                                    </Badge>
-                                                )}
-                                                {consult.ordonnances && consult.ordonnances.length > 0 && (
-                                                    <Badge variant="outline" className="border-green-200 text-green-700">
-                                                        Ordonnance
-                                                    </Badge>
-                                                )}
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex gap-2">
+                                                    {consult.estTelemedicine && (
+                                                        <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+                                                            Télémédecine
+                                                        </Badge>
+                                                    )}
+                                                    {consult.ordonnances && consult.ordonnances.length > 0 && (
+                                                        <Badge variant="outline" className="border-green-200 text-green-700">
+                                                            Ordonnance
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        router.push(`/medecin/consultation/${consult.consultationID}`);
+                                                    }}
+                                                >
+                                                    <ArrowRight className="h-4 w-4" />
+                                                </Button>
                                             </div>
                                         </div>
                                     </div>
@@ -118,145 +148,10 @@ export default function MedecinPatientDetailPage() {
                             <ConsultationForm patient={patient} medecinID={user?.utilisateurID || ""} onCreated={handleConsultationCreated} />
                         </DialogContent>
                     </Dialog>
-
-                    {/* Dialog pour afficher les détails d'une consultation */}
-                    <Dialog open={!!selectedConsultation} onOpenChange={() => setSelectedConsultation(null)}>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-                            <DialogHeader>
-                                <DialogTitle className="flex items-center gap-2">
-                                    <FileText className="h-5 w-5" />
-                                    Détails de la consultation
-                                </DialogTitle>
-                            </DialogHeader>
-                            {selectedConsultation && (
-                                <ConsultationDetails consultation={selectedConsultation} />
-                            )}
-                        </DialogContent>
-                    </Dialog>
                 </>
             ) : (
                 <div className="text-gray-500">Patient introuvable.</div>
             )}
-        </div>
-    );
-}
-
-function ConsultationDetails({ consultation }: { consultation: ConsultationMedicale }) {
-    return (
-        <div className="space-y-6">
-            {/* En-tête avec informations de base */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-                <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                        <User className="h-5 w-5 text-emerald-600" />
-                        <div>
-                            <h3 className="text-lg font-semibold">
-                                {consultation.dossier?.patient?.prenom} {consultation.dossier?.patient?.nom}
-                            </h3>
-                            <p className="text-sm text-gray-600">
-                                {format(new Date(consultation.dateConsultation), "EEEE d MMMM yyyy 'à' HH:mm", { locale: fr })}
-                            </p>
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        {consultation.estTelemedicine && (
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                                Télémédecine
-                            </Badge>
-                        )}
-                        {consultation.ordonnances && consultation.ordonnances.length > 0 && (
-                            <Badge variant="outline" className="border-green-200 text-green-700">
-                                Ordonnance
-                            </Badge>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Motif */}
-            <div>
-                <h4 className="font-semibold text-gray-900 mb-2">Motif de la consultation</h4>
-                <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{consultation.motif}</p>
-            </div>
-
-            {/* Diagnostics */}
-            {consultation.diagnostics && (
-                <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Diagnostics</h4>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{consultation.diagnostics}</p>
-                </div>
-            )}
-
-            {/* Observations */}
-            {consultation.observations && (
-                <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Observations</h4>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{consultation.observations}</p>
-                </div>
-            )}
-
-            {/* Traitement prescrit */}
-            {consultation.traitementPrescrit && (
-                <div>
-                    <h4 className="font-semibold text-gray-900 mb-2">Traitement prescrit</h4>
-                    <p className="text-gray-700 bg-gray-50 p-3 rounded-lg">{consultation.traitementPrescrit}</p>
-                </div>
-            )}
-
-            {/* Ordonnance */}
-            {consultation.ordonnances && consultation.ordonnances.length > 0 && (
-                <div>
-                    <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
-                        <Pill className="h-4 w-4" />
-                        Ordonnance
-                    </h4>
-                    <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="text-sm text-gray-600 mb-3">
-                            <span className="font-medium">Date d'émission:</span> {format(new Date(consultation.ordonnances[0].dateEmission), "dd/MM/yyyy", { locale: fr })}
-                        </div>
-                        <div className="space-y-4">
-                            {consultation.ordonnances[0].prescriptions.map((prescription, index) => (
-                                <div key={index} className="bg-white p-4 rounded-lg border">
-                                    <div className="font-medium text-gray-900 mb-2">
-                                        {prescription.medicament?.nom || `Médicament ${index + 1}`}
-                                    </div>
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                                        <div>
-                                            <span className="font-medium text-gray-700">Posologie:</span>
-                                            <p className="text-gray-600">{prescription.posologie}</p>
-                                        </div>
-                                        <div>
-                                            <span className="font-medium text-gray-700">Durée:</span>
-                                            <p className="text-gray-600">{prescription.duree}</p>
-                                        </div>
-                                        {prescription.instructions && (
-                                            <div>
-                                                <span className="font-medium text-gray-700">Instructions:</span>
-                                                <p className="text-gray-600">{prescription.instructions}</p>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Informations supplémentaires */}
-            <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold text-gray-900 mb-2">Informations supplémentaires</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                    <div>
-                        <span className="font-medium text-gray-700">Consultation créée le:</span>
-                        <p className="text-gray-600">{format(new Date(consultation.createdAt), "dd/MM/yyyy à HH:mm", { locale: fr })}</p>
-                    </div>
-                    <div>
-                        <span className="font-medium text-gray-700">Dernière modification:</span>
-                        <p className="text-gray-600">{format(new Date(consultation.updatedAt), "dd/MM/yyyy à HH:mm", { locale: fr })}</p>
-                    </div>
-                </div>
-            </div>
         </div>
     );
 }
@@ -274,7 +169,7 @@ function ConsultationForm({ patient, medecinID, onCreated }: { patient: any, med
         traitementPrescrit: "",
         estTelemedicine: false,
         lienVisio: "",
-        ordonnance: { prescriptions: [] as PrescriptionDto[] },
+        ordonnance: { prescriptions: [] as PrescriptionWithDisplay[] },
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -283,10 +178,10 @@ function ConsultationForm({ patient, medecinID, onCreated }: { patient: any, med
     const [medicamentSearch, setMedicamentSearch] = useState<string[]>([]); // Array per prescription
 
     // Prescription handlers
-    function handlePrescriptionChange(index: number, field: keyof PrescriptionDto, value: string) {
+    function handlePrescriptionChange(index: number, field: keyof PrescriptionWithDisplay, value: string) {
         setForm(prev => {
             const prescriptions = [...prev.ordonnance.prescriptions];
-            prescriptions[index] = { ...prescriptions[index], [field]: value };
+            prescriptions[index] = { ...prescriptions[index], [field]: value } as PrescriptionWithDisplay;
             return { ...prev, ordonnance: { prescriptions } };
         });
     }
@@ -315,7 +210,11 @@ function ConsultationForm({ patient, medecinID, onCreated }: { patient: any, med
     function handleSelectMedicament(index: number, medicament: MedicamentDto) {
         setForm(prev => {
             const prescriptions = [...prev.ordonnance.prescriptions];
-            prescriptions[index] = { ...prescriptions[index], medicamentID: medicament.medicamentID, medicamentNom: medicament.nom };
+            prescriptions[index] = { 
+                ...prescriptions[index], 
+                medicamentID: medicament.medicamentID, 
+                medicamentNom: medicament.nom 
+            } as PrescriptionWithDisplay;
             return { ...prev, ordonnance: { prescriptions } };
         });
         setMedicamentSearch(prev => {
@@ -332,7 +231,15 @@ function ConsultationForm({ patient, medecinID, onCreated }: { patient: any, med
     function handleAddPrescription() {
         setForm(prev => ({
             ...prev,
-            ordonnance: { prescriptions: [...prev.ordonnance.prescriptions, { medicamentID: '', medicamentNom: '', posologie: '', duree: '', instructions: '' }] },
+            ordonnance: { 
+                prescriptions: [...prev.ordonnance.prescriptions, { 
+                    medicamentID: '', 
+                    medicamentNom: '', 
+                    posologie: '', 
+                    duree: '', 
+                    instructions: '' 
+                } as PrescriptionWithDisplay] 
+            },
         }));
         setMedicamentSearch(prev => [...prev, '']);
         setMedicamentOptions(prev => [...prev, []]);

@@ -105,6 +105,10 @@ export const consultationMedicaleService = {
     const res = await api.get(`/consultations/patient/${patientID}`);
     return res.data;
   },
+  async getById(consultationID: string): Promise<ConsultationMedicale> {
+    const res = await api.get(`/consultations/${consultationID}`);
+    return res.data;
+  },
   async getConsultationCount(patientID: string): Promise<{ count: number }> {
     const res = await api.get(`/consultations/patient/${patientID}/count`);
     return res.data;

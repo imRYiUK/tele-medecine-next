@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import {
   Users,
   Building2,
-  Settings,
+  User,
   LogOut,
   Menu,
   X,
@@ -21,7 +21,7 @@ const navigation = [
   { name: "Dashboard", href: "/admin", icon: Activity },
   { name: "Utilisateurs", href: "/admin/users", icon: Users },
   { name: "Journal d'activité", href: "/admin/journal", icon: BookOpen },
-  { name: "Paramètres", href: "/admin/settings", icon: Settings },
+  { name: "Profil", href: "/admin/profile", icon: User },
 ];
 
 export default function AdminLayout({

@@ -16,6 +16,11 @@ import { format as formatDate } from 'date-fns';
 import { useRouter } from "next/navigation";
 import { medicamentsService, MedicamentDto } from "@/lib/services/medicaments.service";
 
+// Local interface for display purposes
+interface PrescriptionWithDisplay extends PrescriptionDto {
+    medicamentNom?: string;
+}
+
 const locales = { 'fr': fr };
 const localizer = dateFnsLocalizer({
     format,
@@ -173,7 +178,7 @@ function ConsultationForm({ rdv, onCreated }: { rdv: any, onCreated: () => void 
         traitementPrescrit: "",
         estTelemedicine: false,
         lienVisio: "",
-        ordonnance: { prescriptions: [] as PrescriptionDto[] },
+        ordonnance: { prescriptions: [] as PrescriptionWithDisplay[] },
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -205,7 +210,11 @@ function ConsultationForm({ rdv, onCreated }: { rdv: any, onCreated: () => void 
     function handleSelectMedicament(index: number, medicament: MedicamentDto) {
         setForm(prev => {
             const prescriptions = [...prev.ordonnance.prescriptions];
-            prescriptions[index] = { ...prescriptions[index], medicamentID: medicament.medicamentID, medicamentNom: medicament.nom };
+            prescriptions[index] = { 
+                ...prescriptions[index], 
+                medicamentID: medicament.medicamentID, 
+                medicamentNom: medicament.nom 
+            } as PrescriptionWithDisplay;
             return { ...prev, ordonnance: { prescriptions } };
         });
         setMedicamentSearch(prev => {
@@ -220,10 +229,10 @@ function ConsultationForm({ rdv, onCreated }: { rdv: any, onCreated: () => void 
         });
     }
 
-    function handlePrescriptionChange(index: number, field: keyof PrescriptionDto, value: string) {
+    function handlePrescriptionChange(index: number, field: keyof PrescriptionWithDisplay, value: string) {
         setForm(prev => {
             const prescriptions = [...prev.ordonnance.prescriptions];
-            prescriptions[index] = { ...prescriptions[index], [field]: value };
+            prescriptions[index] = { ...prescriptions[index], [field]: value } as PrescriptionWithDisplay;
             return { ...prev, ordonnance: { prescriptions } };
         });
     }
@@ -231,7 +240,15 @@ function ConsultationForm({ rdv, onCreated }: { rdv: any, onCreated: () => void 
     function handleAddPrescription() {
         setForm(prev => ({
             ...prev,
-            ordonnance: { prescriptions: [...prev.ordonnance.prescriptions, { medicamentID: '', medicamentNom: '', posologie: '', duree: '', instructions: '' }] },
+            ordonnance: { 
+                prescriptions: [...prev.ordonnance.prescriptions, { 
+                    medicamentID: '', 
+                    medicamentNom: '', 
+                    posologie: '', 
+                    duree: '', 
+                    instructions: '' 
+                } as PrescriptionWithDisplay] 
+            },
         }));
         setMedicamentSearch(prev => [...prev, '']);
         setMedicamentOptions(prev => [...prev, []]);

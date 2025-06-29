@@ -5,7 +5,7 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { 
   Users, 
   Building2, 
-  Settings, 
+  User, 
   LogOut, 
   Menu,
   X,
@@ -22,7 +22,7 @@ const navigation = [
   { name: "Utilisateurs", href: "/super-admin/users", icon: Users },
   { name: "Établissements", href: "/super-admin/establishments", icon: Building2 },
   { name: "Journal d'activité", href: "/super-admin/journal", icon: BookOpen },
-  { name: "Paramètres", href: "/super-admin/settings", icon: Settings },
+  { name: "Profil", href: "/super-admin/profile", icon: User },
 ];
 
 export default function SuperAdminLayout({

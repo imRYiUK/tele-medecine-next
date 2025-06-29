@@ -4,13 +4,16 @@ import { consultationMedicaleService, ConsultationMedicale } from "@/lib/service
 import { useAuth } from "@/lib/hooks/useAuth";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { Loader2, Search, Calendar, User, FileText } from "lucide-react";
+import { Loader2, Search, Calendar, User, FileText, ArrowRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
 
 export default function MedecinConsultationsPage() {
     const { user } = useAuth();
+    const router = useRouter();
     const [consultations, setConsultations] = useState<ConsultationMedicale[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -64,7 +67,7 @@ export default function MedecinConsultationsPage() {
                 </div>
             </div>
 
-            <div className="grid gap-6">
+            <div className="grid gap-4">
                 {filteredConsultations.length === 0 ? (
                     <Card>
                         <CardContent className="flex items-center justify-center py-12">
@@ -79,89 +82,66 @@ export default function MedecinConsultationsPage() {
                     </Card>
                 ) : (
                     filteredConsultations.map((consultation) => (
-                        <Card key={consultation.consultationID} className="hover:shadow-md transition-shadow">
-                            <CardHeader>
-                                <div className="flex items-start justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <User className="h-5 w-5 text-emerald-600" />
-                                        <div>
-                                            <CardTitle className="text-lg">
-                                                {consultation.dossier?.patient?.prenom} {consultation.dossier?.patient?.nom}
-                                            </CardTitle>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <Calendar className="h-4 w-4 text-gray-400" />
-                                                <span className="text-sm text-gray-600">
-                          {format(new Date(consultation.dateConsultation), 'PPP à HH:mm', { locale: fr })}
-                        </span>
+                        <Card 
+                            key={consultation.consultationID} 
+                            className="hover:shadow-md transition-all duration-200 cursor-pointer group"
+                            onClick={() => router.push(`/medecin/consultation/${consultation.consultationID}`)}
+                        >
+                            <CardContent className="p-6">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4 flex-1">
+                                        <div className="bg-emerald-100 p-2 rounded-full">
+                                            <User className="h-5 w-5 text-emerald-600" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <div className="flex items-center gap-3 mb-2">
+                                                <h3 className="text-lg font-semibold text-gray-900">
+                                                    {consultation.dossier?.patient?.prenom} {consultation.dossier?.patient?.nom}
+                                                </h3>
+                                                <div className="flex gap-2">
+                                                    {consultation.estTelemedicine && (
+                                                        <Badge variant="secondary" className="bg-blue-100 text-blue-800 text-xs">
+                                                            Télémédecine
+                                                        </Badge>
+                                                    )}
+                                                    {consultation.ordonnances && consultation.ordonnances.length > 0 && (
+                                                        <Badge variant="outline" className="border-green-200 text-green-700 text-xs">
+                                                            Ordonnance
+                                                        </Badge>
+                                                    )}
+                                                </div>
+                                            </div>
+                                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                                                <div className="flex items-center gap-1">
+                                                    <Calendar className="h-4 w-4" />
+                                                    <span>
+                                                        {format(new Date(consultation.dateConsultation), 'PPP à HH:mm', { locale: fr })}
+                                                    </span>
+                                                </div>
+                                                <span>•</span>
+                                                <span className="text-gray-700 font-medium">
+                                                    {consultation.motif.length > 60 
+                                                        ? `${consultation.motif.substring(0, 60)}...` 
+                                                        : consultation.motif
+                                                    }
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2">
-                                        {consultation.estTelemedicine && (
-                                            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
-                                                Télémédecine
-                                            </Badge>
-                                        )}
-                                        {consultation.ordonnances && consultation.ordonnances.length > 0 && (
-                                            <Badge variant="outline" className="border-green-200 text-green-700">
-                                                Ordonnance
-                                            </Badge>
-                                        )}
+                                    <div className="flex items-center gap-2">
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                router.push(`/medecin/consultation/${consultation.consultationID}`);
+                                            }}
+                                        >
+                                            <ArrowRight className="h-4 w-4" />
+                                        </Button>
                                     </div>
                                 </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div>
-                                    <h4 className="font-medium text-gray-900 mb-2">Motif</h4>
-                                    <p className="text-gray-700">{consultation.motif}</p>
-                                </div>
-
-                                {consultation.diagnostics && (
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Diagnostics</h4>
-                                        <p className="text-gray-700">{consultation.diagnostics}</p>
-                                    </div>
-                                )}
-
-                                {consultation.observations && (
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Observations</h4>
-                                        <p className="text-gray-700">{consultation.observations}</p>
-                                    </div>
-                                )}
-
-                                {consultation.traitementPrescrit && (
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Traitement prescrit</h4>
-                                        <p className="text-gray-700">{consultation.traitementPrescrit}</p>
-                                    </div>
-                                )}
-
-                                {consultation.ordonnances && consultation.ordonnances.length > 0 && (
-                                    <div>
-                                        <h4 className="font-medium text-gray-900 mb-2">Ordonnance</h4>
-                                        <div className="space-y-2">
-                                            {consultation.ordonnances[0].prescriptions.map((prescription, index) => (
-                                                <div key={index} className="bg-gray-50 p-3 rounded-lg">
-                                                    <div className="font-medium text-gray-900">
-                                                        {prescription.medicament?.nom || `Médicament ${index + 1}`}
-                                                    </div>
-                                                    <div className="text-sm text-gray-600 mt-1">
-                                                        <span className="font-medium">Posologie:</span> {prescription.posologie}
-                                                    </div>
-                                                    <div className="text-sm text-gray-600">
-                                                        <span className="font-medium">Durée:</span> {prescription.duree}
-                                                    </div>
-                                                    {prescription.instructions && (
-                                                        <div className="text-sm text-gray-600">
-                                                            <span className="font-medium">Instructions:</span> {prescription.instructions}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
                             </CardContent>
                         </Card>
                     ))
