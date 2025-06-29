@@ -131,8 +131,14 @@ export const radiologistApi = {
   getReceivedInvitations: (): Promise<ImageCollaboration[]> => 
     api.get('/examen-medical/images/user/received-invitations').then((res: any) => res.data),
 
+  getReceivedRejectedInvitations: (): Promise<ImageCollaboration[]> => 
+    api.get('/examen-medical/images/user/received-rejected-invitations').then((res: any) => res.data),
+
   getSentInvitations: (): Promise<ImageCollaboration[]> => 
     api.get('/examen-medical/images/user/sent-invitations').then((res: any) => res.data),
+
+  getAllSentInvitations: (): Promise<ImageCollaboration[]> => 
+    api.get('/examen-medical/images/user/all-sent-invitations').then((res: any) => res.data),
 
   getActiveCollaborations: (): Promise<ImageCollaboration[]> => 
     api.get('/examen-medical/images/user/active-collaborations').then((res: any) => res.data),
