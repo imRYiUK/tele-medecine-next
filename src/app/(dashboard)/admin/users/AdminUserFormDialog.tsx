@@ -9,12 +9,11 @@ import { Loader2, Plus } from "lucide-react";
 import { useAuth } from "@/lib/hooks/useAuth";
 import { toast } from 'sonner';
 
-const roles = [
-  { label: "Admin", value: "ADMINISTRATEUR" },
+const roleOptions = [
+  { label: "Administrateur", value: "ADMINISTRATEUR" },
   { label: "Médecin", value: "MEDECIN" },
-  { label: "Réceptionniste", value: "RECEPTIONNISTE" },
   { label: "Radiologue", value: "RADIOLOGUE" },
-  { label: "Technicien", value: "TECHNICIEN" },
+  { label: "Réceptionniste", value: "RECEPTIONNISTE" },
 ];
 
 export function AdminUserFormDialog({ onUserCreated }: { onUserCreated: () => void }) {
@@ -90,7 +89,7 @@ export function AdminUserFormDialog({ onUserCreated }: { onUserCreated: () => vo
               <SelectValue placeholder="Rôle" />
             </SelectTrigger>
             <SelectContent>
-              {roles.map((role) => (
+              {roleOptions.map((role) => (
                 <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
               ))}
             </SelectContent>

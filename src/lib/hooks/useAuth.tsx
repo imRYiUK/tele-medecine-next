@@ -12,6 +12,7 @@ interface AuthContextType {
   login: (credentials: LoginCredentials) => Promise<AuthResponse>;
   register: (credentials: RegisterCredentials) => Promise<AuthResponse>;
   logout: () => Promise<void>;
+  updateUser: (userData: User) => void;
   isLoading: boolean;
 }
 
@@ -100,8 +101,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [router]);
 
+  const updateUser = useCallback((userData: User) => {
+    setUser(userData);
+    // Update stored user data in cookies
+    const expirationDate = new Date();
+    expirationDate.setDate(expirationDate.getDate() + 7); // 7 days expiration
+    Cookies.set('user', JSON.stringify(userData), { expires: expirationDate });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, isLoading }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, updateUser, isLoading }}>
       {children}
     </AuthContext.Provider>
   );
@@ -112,5 +121,12 @@ export function useAuth() {
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return { user: context.user, loading: context.isLoading, login: context.login, register: context.register, logout: context.logout };
+  return { 
+    user: context.user, 
+    loading: context.isLoading, 
+    login: context.login, 
+    register: context.register, 
+    logout: context.logout,
+    updateUser: context.updateUser
+  };
 }

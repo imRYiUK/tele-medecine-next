@@ -20,7 +20,6 @@ const roles = [
   { label: "Médecin", value: "MEDECIN" },
   { label: "Réceptionniste", value: "RECEPTIONNISTE" },
   { label: "Radiologue", value: "RADIOLOGUE" },
-  { label: "Technicien", value: "TECHNICIEN" },
 ];
 
 export default function UsersPage() {

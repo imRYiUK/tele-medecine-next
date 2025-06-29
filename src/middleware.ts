@@ -9,7 +9,6 @@ const protectedRoutes = {
   '/medecin': ['MEDECIN'],
   '/receptionniste': ['RECEPTIONNISTE'],
   '/radiologue': ['RADIOLOGUE'],
-  '/technicien': ['TECHNICIEN'],
 };
 
 export function middleware(request: NextRequest) {

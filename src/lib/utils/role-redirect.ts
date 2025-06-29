@@ -10,8 +10,6 @@ export const getRoleBasedRedirect = (role: string): string => {
       return '/receptionniste';
     case 'RADIOLOGUE':
       return '/radiologue';
-    case 'TECHNICIEN':
-      return '/technicien';
     default:
       return '/dashboard';
   }

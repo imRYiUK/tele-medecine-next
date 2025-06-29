@@ -12,13 +12,12 @@ import { useAuth } from "@/lib/hooks/useAuth";
 import { AdminUserFormDialog } from "./AdminUserFormDialog";
 import { AdminUserEditDialog } from "./AdminUserEditDialog";
 
-const roles = [
-  { label: "Tous", value: "all" },
-  { label: "Admin", value: "ADMINISTRATEUR" },
+const roleOptions = [
+  { label: "Tous les rôles", value: "" },
+  { label: "Administrateur", value: "ADMINISTRATEUR" },
   { label: "Médecin", value: "MEDECIN" },
-  { label: "Réceptionniste", value: "RECEPTIONNISTE" },
   { label: "Radiologue", value: "RADIOLOGUE" },
-  { label: "Technicien", value: "TECHNICIEN" },
+  { label: "Réceptionniste", value: "RECEPTIONNISTE" },
 ];
 
 export default function AdminUsersPage() {
@@ -96,7 +95,7 @@ export default function AdminUsersPage() {
             <SelectValue placeholder="Filtrer par rôle" />
           </SelectTrigger>
           <SelectContent>
-            {roles.map((role) => (
+            {roleOptions.map((role) => (
               <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
             ))}
           </SelectContent>

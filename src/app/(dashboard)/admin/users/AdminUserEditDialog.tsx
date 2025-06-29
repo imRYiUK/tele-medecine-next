@@ -14,7 +14,6 @@ const roles = [
   { label: "Médecin", value: "MEDECIN" },
   { label: "Réceptionniste", value: "RECEPTIONNISTE" },
   { label: "Radiologue", value: "RADIOLOGUE" },
-  { label: "Technicien", value: "TECHNICIEN" },
 ];
 
 export function AdminUserEditDialog({ userToEdit, onUserUpdated }: { userToEdit: User; onUserUpdated: () => void }) {

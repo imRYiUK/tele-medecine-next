@@ -1,12 +1,13 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/hooks/useAuth";
+import { usersService, ProfileUpdateDto } from "@/lib/services/users.service";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, User, Mail, Phone, Shield, Save } from "lucide-react";
+import { Loader2, User, Mail, Phone, Shield, Save, Lock, Eye, EyeOff } from "lucide-react";
 import { toast } from "sonner";
 
 interface ProfileFormProps {
@@ -15,17 +16,49 @@ interface ProfileFormProps {
 }
 
 export default function ProfileForm({ role, colorScheme = "emerald" }: ProfileFormProps) {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   const [form, setForm] = useState({
-    nom: user?.nom || "",
-    prenom: user?.prenom || "",
-    email: user?.email || "",
-    telephone: user?.telephone || "",
+    nom: "",
+    prenom: "",
+    email: "",
+    telephone: "",
+    username: "",
   });
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  // Load user data when component mounts or user changes
+  useEffect(() => {
+    if (user) {
+      setForm({
+        nom: user.nom || "",
+        prenom: user.prenom || "",
+        email: user.email || "",
+        telephone: user.telephone || "",
+        username: user.username || "",
+      });
+    }
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPasswordForm(prev => ({
       ...prev,
       [e.target.name]: e.target.value
     }));
@@ -36,15 +69,64 @@ export default function ProfileForm({ role, colorScheme = "emerald" }: ProfileFo
     setLoading(true);
     
     try {
-      // Here you would typically call an API to update the user profile
-      // For now, we'll simulate the update
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const updateData: ProfileUpdateDto = {
+        nom: form.nom,
+        prenom: form.prenom,
+        email: form.email,
+        telephone: form.telephone,
+        username: form.username,
+      };
+
+      const updatedUser = await usersService.updateProfile(updateData);
       
+      // Update the auth context with new user data
+      updateUser(updatedUser);
       toast.success("Profil mis à jour avec succès");
-    } catch (error) {
-      toast.error("Erreur lors de la mise à jour du profil");
+    } catch (error: any) {
+      console.error('Profile update error:', error);
+      const errorMessage = error.response?.data?.message || "Erreur lors de la mise à jour du profil";
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handlePasswordSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("Les mots de passe ne correspondent pas");
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      toast.error("Le nouveau mot de passe doit contenir au moins 6 caractères");
+      return;
+    }
+
+    setPasswordLoading(true);
+    
+    try {
+      const updateData: ProfileUpdateDto = {
+        password: passwordForm.newPassword,
+      };
+
+      await usersService.updateProfile(updateData);
+      
+      toast.success("Mot de passe mis à jour avec succès");
+      
+      // Clear password form
+      setPasswordForm({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error: any) {
+      console.error('Password update error:', error);
+      const errorMessage = error.response?.data?.message || "Erreur lors de la mise à jour du mot de passe";
+      toast.error(errorMessage);
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -60,8 +142,6 @@ export default function ProfileForm({ role, colorScheme = "emerald" }: ProfileFo
         return "Réceptionniste";
       case "RADIOLOGUE":
         return "Radiologue";
-      case "TECHNICIEN":
-        return "Technicien";
       default:
         return role;
     }
@@ -158,6 +238,20 @@ export default function ProfileForm({ role, colorScheme = "emerald" }: ProfileFo
             <Separator />
 
             <div className="space-y-2">
+              <Label htmlFor="username" className="flex items-center gap-2">
+                <User className="h-4 w-4" />
+                Nom d'utilisateur
+              </Label>
+              <Input
+                id="username"
+                name="username"
+                value={form.username}
+                onChange={handleChange}
+                required
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="email" className="flex items-center gap-2">
                 <Mail className="h-4 w-4" />
                 Email
@@ -210,20 +304,95 @@ export default function ProfileForm({ role, colorScheme = "emerald" }: ProfileFo
       <Card>
         <CardHeader>
           <CardTitle className={`flex items-center gap-2 text-lg`}>
-            <Shield className={`h-5 w-5 ${colorConfig.text}`} />
+            <Lock className={`h-5 w-5 ${colorConfig.text}`} />
             Sécurité
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-medium text-gray-900 mb-2">Changer le mot de passe</h4>
-            <p className="text-sm text-gray-600 mb-3">
-              Pour des raisons de sécurité, veuillez contacter l'administrateur pour changer votre mot de passe.
-            </p>
-            <Button variant="outline" disabled>
-              Contacter l'administrateur
-            </Button>
-          </div>
+        <CardContent>
+          <form onSubmit={handlePasswordSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="newPassword" className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                Nouveau mot de passe
+              </Label>
+              <div className="relative">
+                <Input
+                  id="newPassword"
+                  name="newPassword"
+                  type={showNewPassword ? "text" : "password"}
+                  value={passwordForm.newPassword}
+                  onChange={handlePasswordChange}
+                  placeholder="Nouveau mot de passe"
+                  minLength={6}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword" className="flex items-center gap-2">
+                <Lock className="h-4 w-4" />
+                Confirmer le mot de passe
+              </Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={passwordForm.confirmPassword}
+                  onChange={handlePasswordChange}
+                  placeholder="Confirmer le mot de passe"
+                  minLength={6}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Button 
+                type="submit" 
+                disabled={passwordLoading || !passwordForm.newPassword || !passwordForm.confirmPassword} 
+                variant="outline"
+                className={colorConfig.button}
+              >
+                {passwordLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Mise à jour...
+                  </>
+                ) : (
+                  <>
+                    <Lock className="mr-2 h-4 w-4" />
+                    Changer le mot de passe
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
         </CardContent>
       </Card>
     </div>

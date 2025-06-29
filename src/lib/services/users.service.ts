@@ -7,8 +7,9 @@ export interface User {
   email: string;
   username: string;
   telephone: string;
-  role: string;
+  role: 'SUPER_ADMIN' | 'ADMINISTRATEUR' | 'MEDECIN' | 'RADIOLOGUE' | 'RECEPTIONNISTE';
   estActif: boolean;
+  etablissementID: string;
   etablissement?: {
     etablissementID: string;
     nom: string;
@@ -38,6 +39,15 @@ export interface UpdateUserDto {
   etablissementID?: string;
 }
 
+export interface ProfileUpdateDto {
+  nom?: string;
+  prenom?: string;
+  email?: string;
+  username?: string;
+  telephone?: string;
+  password?: string;
+}
+
 export const usersService = {
   async getAll(): Promise<User[]> {
     const res = await api.get('/users');
@@ -64,6 +74,15 @@ export const usersService = {
   },
   async getRadiologuesByEtablissement(etablissementID: string): Promise<User[]> {
     const res = await api.get(`/users/radiologues/etablissement/${etablissementID}`);
+    return res.data;
+  },
+  // Profile methods
+  async getProfile(): Promise<User> {
+    const res = await api.get('/users/profile/me');
+    return res.data;
+  },
+  async updateProfile(data: ProfileUpdateDto): Promise<User> {
+    const res = await api.put('/users/profile/me', data);
     return res.data;
   },
 }; 

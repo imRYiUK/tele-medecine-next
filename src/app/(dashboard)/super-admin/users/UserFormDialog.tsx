@@ -11,13 +11,12 @@ import { Loader2 } from "lucide-react";
 import { EtablissementCombobox } from "./EtablissementCombobox";
 import { toast } from 'sonner';
 
-const roles = [
-  { label: "Super Admin", value: "SUPER_ADMIN" },
-  { label: "Admin", value: "ADMINISTRATEUR" },
+const roleOptions = [
+  { label: "Super Administrateur", value: "SUPER_ADMIN" },
+  { label: "Administrateur", value: "ADMINISTRATEUR" },
   { label: "Médecin", value: "MEDECIN" },
-  { label: "Réceptionniste", value: "RECEPTIONNISTE" },
   { label: "Radiologue", value: "RADIOLOGUE" },
-  { label: "Technicien", value: "TECHNICIEN" },
+  { label: "Réceptionniste", value: "RECEPTIONNISTE" },
 ];
 
 export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void }) {
@@ -103,7 +102,7 @@ export function UserFormDialog({ onUserCreated }: { onUserCreated: () => void })
               <SelectValue placeholder="Rôle" />
             </SelectTrigger>
             <SelectContent>
-              {roles.map((role) => (
+              {roleOptions.map((role) => (
                 <SelectItem key={role.value} value={role.value}>{role.label}</SelectItem>
               ))}
             </SelectContent>
