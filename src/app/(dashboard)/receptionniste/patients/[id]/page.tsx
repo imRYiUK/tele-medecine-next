@@ -40,7 +40,7 @@ export default function ReceptionnistePatientDetailPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center h-full">
         <Loader2 className="animate-spin w-8 h-8 text-emerald-600" />
       </div>
     );
@@ -48,7 +48,7 @@ export default function ReceptionnistePatientDetailPage() {
 
   if (!patient) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex justify-center items-center h-full">
         <div className="text-gray-500">Patient introuvable.</div>
       </div>
     );

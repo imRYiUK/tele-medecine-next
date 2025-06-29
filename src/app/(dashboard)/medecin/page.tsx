@@ -48,7 +48,7 @@ export default function MedecinDashboardPage() {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+            <div className="flex items-center justify-center h-full">
                 <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
             </div>
         );
@@ -56,14 +56,14 @@ export default function MedecinDashboardPage() {
 
     if (error) {
         return (
-            <div className="flex items-center justify-center min-h-screen bg-gray-100">
+            <div className="flex items-center justify-center h-full">
                 <div className="text-red-600 text-lg font-semibold">{error}</div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 p-6 space-y-8">
+        <div className="space-y-8">
             <h1 className="text-4xl font-extrabold text-gray-900 mb-6">Tableau de bord Médecin</h1>
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
                 <Card className="shadow-lg bg-white border border-gray-200">

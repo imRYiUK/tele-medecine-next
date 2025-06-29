@@ -35,7 +35,7 @@ export default function AdminLayout({
 
   return (
     <RoleGuard allowedRoles={["ADMINISTRATEUR"]}>
-      <div className="min-h-screen bg-gray-50">
+      <div className="h-screen bg-gray-50 flex overflow-hidden">
         {/* Mobile sidebar */}
         <div
           className={`fixed inset-0 z-40 lg:hidden ${
@@ -86,7 +86,7 @@ export default function AdminLayout({
         </div>
 
         {/* Desktop sidebar */}
-        <div className="hidden lg:fixed lg:inset-y-0 lg:flex lg:w-64 lg:flex-col">
+        <div className="hidden lg:flex lg:w-64 lg:flex-col">
           <div className="flex min-h-0 flex-1 flex-col border-r border-gray-200 bg-white">
             <div className="flex h-16 items-center px-4">
               <span className="text-xl font-semibold text-emerald-600">Admin</span>
@@ -127,8 +127,8 @@ export default function AdminLayout({
         </div>
 
         {/* Main content */}
-        <div className="lg:pl-64">
-          <div className="sticky top-0 z-10 flex h-16 flex-shrink-0 bg-white shadow">
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex h-16 flex-shrink-0 bg-white shadow">
             <button
               type="button"
               className="px-4 text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-emerald-500 lg:hidden"
@@ -149,9 +149,11 @@ export default function AdminLayout({
             </div>
           </div>
 
-          <main className="py-6">
-            <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-              {children}
+          <main className="flex-1 overflow-y-auto">
+            <div className="py-6">
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                {children}
+              </div>
             </div>
           </main>
         </div>

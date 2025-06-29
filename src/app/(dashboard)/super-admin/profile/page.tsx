@@ -7,7 +7,7 @@ export default function SuperAdminProfilePage() {
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
+      <div className="flex items-center justify-center h-full">
         <div className="text-center">
           <h3 className="text-lg font-medium text-gray-900">Chargement...</h3>
         </div>
