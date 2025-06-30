@@ -31,7 +31,7 @@ Ce dépôt contient l'interface web du projet de télémédecine, développée a
 
 1. **Clonez le dépôt :**
    ```bash
-   git clone <url-du-repo>
+   git clone https://github.com/imRYiUK/tele-medecine-next
    cd tele-medecine-next
    ```
 2. **Installez les dépendances :**
@@ -75,11 +75,6 @@ tele-medecine-next/
 ## 🚢 Déploiement
 
 - **Vercel** : connectez le repo et déployez automatiquement
-- **Docker** :
-  ```bash
-  docker build -t tele-medecine-next .
-  docker run -p 3000:3000 tele-medecine-next
-  ```
 
 ---
 
