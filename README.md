@@ -1,6 +1,6 @@
-# 💻 Frontend Télémédecine – Next.js
+# 💻 Frontend SunuSanté – Next.js
 
-Bienvenue dans l'interface utilisateur du projet **Télémédecine** ! 🌐
+Bienvenue dans l'interface utilisateur du projet **SunuSanté** ! 🌐
 
 ---
 
