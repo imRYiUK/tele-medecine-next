@@ -60,7 +60,11 @@ export function LoginForm() {
         </CardHeader>
 
         <CardContent>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={handleSubmit(onSubmit, (formErrors) => {
+            if (formErrors.email || formErrors.password) {
+              toast.error('Email ou mot de passe incorrect');
+            }
+          })} className="space-y-6">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm font-medium text-gray-700">
                 Adresse email
