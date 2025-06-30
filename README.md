@@ -1,6 +1,6 @@
-# 💻 Frontend Télémédecine – Next.js
+# 💻 Frontend SunuSanté – Next.js
 
-Bienvenue dans l'interface utilisateur du projet **Télémédecine** ! 🌐
+Bienvenue dans l'interface utilisateur du projet **SunuSanté** ! 🌐
 
 ---
 
@@ -31,7 +31,7 @@ Ce dépôt contient l'interface web du projet de télémédecine, développée a
 
 1. **Clonez le dépôt :**
    ```bash
-   git clone <url-du-repo>
+   git clone https://github.com/imRYiUK/tele-medecine-next
    cd tele-medecine-next
    ```
 2. **Installez les dépendances :**
@@ -41,6 +41,7 @@ Ce dépôt contient l'interface web du projet de télémédecine, développée a
 3. **Configurez les variables d'environnement dans `.env.local` :**
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:3001
+   NEXT_PUBLIC_WEBSOCKET_URL=https://localhost:3001
    # Autres variables selon vos besoins
    ```
 
@@ -75,11 +76,6 @@ tele-medecine-next/
 ## 🚢 Déploiement
 
 - **Vercel** : connectez le repo et déployez automatiquement
-- **Docker** :
-  ```bash
-  docker build -t tele-medecine-next .
-  docker run -p 3000:3000 tele-medecine-next
-  ```
 
 ---
 
