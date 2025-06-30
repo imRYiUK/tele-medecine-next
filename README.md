@@ -41,6 +41,7 @@ Ce dépôt contient l'interface web du projet de télémédecine, développée a
 3. **Configurez les variables d'environnement dans `.env.local` :**
    ```env
    NEXT_PUBLIC_API_URL=http://localhost:3001
+   NEXT_PUBLIC_WEBSOCKET_URL=https://localhost:3001
    # Autres variables selon vos besoins
    ```
 
