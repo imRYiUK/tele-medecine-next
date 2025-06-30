@@ -16,7 +16,7 @@ import { toast } from 'sonner';
 
 const loginSchema = z.object({
   email: z.string().email('Email invalide'),
-  password: z.string().min(8, 'Le mot de passe doit contenir au moins 8 caractères'),
+  password: z.string().min(8),
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -40,16 +40,7 @@ export function LoginForm() {
       const redirectPath = getRoleBasedRedirect(response.user.role);
       router.push(redirectPath);
     } catch (err: any) {
-      // Handle different types of errors
-      let errorMessage = 'Email ou mot de passe incorrect';
-      
-      if (err.response?.data?.message) {
-        errorMessage = err.response.data.message;
-      } else if (err.message) {
-        errorMessage = err.message;
-      }
-      
-      toast.error(errorMessage);
+      toast.error('Email ou mot de passe incorrect');
     }
   };
 
@@ -84,7 +75,7 @@ export function LoginForm() {
                 className="h-11 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+                <></>
               )}
             </div>
 
@@ -101,9 +92,6 @@ export function LoginForm() {
                 required
                 className="h-11 border-gray-300 focus:border-emerald-500 focus:ring-emerald-500"
               />
-              {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
-              )}
             </div>
 
             <Button 
