@@ -373,6 +373,13 @@ export default function ReceptionnisteRendezVousPage() {
     fetchRdvs();
   }, []);
 
+  // Open dialog automatically if patientID is present in URL
+  useEffect(() => {
+    if (patientID) {
+      setDialogOpen(true);
+    }
+  }, [patientID]);
+
   function handleCreated() {
     fetchRdvs();
     setDialogOpen(false);
@@ -623,7 +630,6 @@ export default function ReceptionnisteRendezVousPage() {
           </button>
         </div>
       )}
-      {patientID && <RendezVousForm patientID={patientID} onCreated={handleCreated} existingAppointments={rdvs} />}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <h2 className="text-3xl font-bold text-emerald-700 tracking-tight">Rendez-vous</h2>
       </div>
