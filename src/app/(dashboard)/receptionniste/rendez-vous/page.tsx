@@ -41,7 +41,7 @@ function RendezVousForm({
   onCreated, 
   initialDateHeure, 
   initialEndHeure, 
-  existingAppointments = [] 
+  existingAppointments = []
 }: { 
   patientID?: string, 
   onCreated: () => void, 
@@ -373,7 +373,7 @@ export default function ReceptionnisteRendezVousPage() {
     fetchRdvs();
   }, []);
 
-  // Open dialog automatically if patientID is present in URL
+  // Open dialog automatically if patientID is present
   useEffect(() => {
     if (patientID) {
       setDialogOpen(true);
@@ -566,24 +566,22 @@ export default function ReceptionnisteRendezVousPage() {
 
   return (
     <div className="space-y-6" onClick={() => setContextMenu(null)}>
-      {!patientID && (
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          {/*<DialogTrigger asChild>*/}
-          {/*  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mb-2">Créer un rendez-vous</Button>*/}
-          {/*</DialogTrigger>*/}
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Créer un rendez-vous</DialogTitle>
-            </DialogHeader>
-            <RendezVousForm
-              onCreated={handleCreated}
-              initialDateHeure={selectedSlot ? formatDate(selectedSlot.start, "yyyy-MM-dd'T'HH:mm") : undefined}
-              initialEndHeure={selectedSlot && selectedSlot.end ? formatDate(selectedSlot.end, "yyyy-MM-dd'T'HH:mm") : undefined}
-              existingAppointments={rdvs}
-            />
-          </DialogContent>
-        </Dialog>
-      )}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        {/*<DialogTrigger asChild>*/}
+        {/*  <Button className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold mb-2">Créer un rendez-vous</Button>*/}
+        {/*</DialogTrigger>*/}
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Créer un rendez-vous</DialogTitle>
+          </DialogHeader>
+          <RendezVousForm
+            onCreated={handleCreated}
+            initialDateHeure={selectedSlot ? formatDate(selectedSlot.start, "yyyy-MM-dd'T'HH:mm") : undefined}
+            initialEndHeure={selectedSlot && selectedSlot.end ? formatDate(selectedSlot.end, "yyyy-MM-dd'T'HH:mm") : undefined}
+            existingAppointments={rdvs}
+          />
+        </DialogContent>
+      </Dialog>
       
       {/* Edit Dialog */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
