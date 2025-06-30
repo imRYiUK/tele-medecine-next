@@ -61,6 +61,16 @@ export default function ReceptionnistePatientDetailPage() {
         <h1 className="text-3xl font-bold text-emerald-700">Informations Patient</h1>
       </div>
 
+      {/* Nouveau rendez-vous button */}
+      <div className="mb-4">
+        <Button
+          className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
+          onClick={() => router.push(`/receptionniste/rendez-vous?patientID=${id}`)}
+        >
+          Nouveau rendez-vous
+        </Button>
+      </div>
+
       <div className="grid gap-6">
         {/* Informations du patient */}
         <Card>
