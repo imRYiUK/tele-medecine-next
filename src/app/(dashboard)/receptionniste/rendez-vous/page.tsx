@@ -481,6 +481,14 @@ export default function ReceptionnisteRendezVousPage() {
     const date = startDate.toISOString().slice(0, 10);
     const debutTime = startDate.toTimeString().slice(0, 5);
     const endTime = endDate.toTimeString().slice(0, 5);
+    // Optimistic update
+    setRdvs((prevRdvs) => {
+      return prevRdvs.map((rdv) =>
+        rdv.rendezVousID === event.resource.rendezVousID
+          ? { ...rdv, date, debutTime, endTime }
+          : rdv
+      );
+    });
     try {
       await rendezVousService.update(event.resource.rendezVousID, {
         date,
@@ -488,8 +496,17 @@ export default function ReceptionnisteRendezVousPage() {
         endTime,
       });
       toast.success('Rendez-vous déplacé');
-      fetchRdvs();
+      // Optionally, you can re-fetch to ensure sync, or just leave as is
+      // fetchRdvs();
     } catch (err) {
+      // Rollback on error
+      setRdvs((prevRdvs) => {
+        return prevRdvs.map((rdv) =>
+          rdv.rendezVousID === event.resource.rendezVousID
+            ? { ...rdv, date: event.resource.date, debutTime: event.resource.debutTime, endTime: event.resource.endTime }
+            : rdv
+        );
+      });
       toast.error('Erreur lors du déplacement du rendez-vous');
     }
   }
