@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { api } from "@/lib/api";
+import { radiologistApi } from "@/lib/api/radiologist";
 
 interface DashboardStats {
   examensEnAttente: number;
@@ -42,6 +43,7 @@ export default function RadiologueDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [recentExams, setRecentExams] = useState<RecentExam[]>([]);
   const [loading, setLoading] = useState(true);
+  const [collaborations, setCollaborations] = useState<any[]>([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -53,6 +55,10 @@ export default function RadiologueDashboard() {
         // Fetch recent exams from localhost:3001/api/examens-medicaux/radiologue/examens-recents
         const recentResponse = await api.get('/examens-medicaux/radiologue/examens-recents');
         setRecentExams(recentResponse.data);
+
+        // Fetch real collaborations
+        const collaborationsResponse = await radiologistApi.getUserCollaborations();
+        setCollaborations(collaborationsResponse);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -196,34 +202,52 @@ export default function RadiologueDashboard() {
         </CardContent>
       </Card>
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Actions rapides</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <Link href="/radiologue/examens?status=EN_ATTENTE">
-              <Button className="w-full justify-start" variant="outline">
-                <Clock className="mr-2 h-4 w-4" />
-                Examiner les examens en attente
-              </Button>
-            </Link>
-            <Link href="/radiologue/examens?status=ANALYSE">
-              <Button className="w-full justify-start" variant="outline">
-                <CheckCircle className="mr-2 h-4 w-4" />
-                Voir les examens analysés
-              </Button>
-            </Link>
-            <Link href="/radiologue/dicom">
-              <Button className="w-full justify-start" variant="outline">
-                <Database className="mr-2 h-4 w-4" />
-                Accéder aux images DICOM
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Collaborations récentes en full width */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Collaborations récentes</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead>
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Patient</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Examen</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Collaborateur</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                  <th className="px-4 py-2"></th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-100">
+                {collaborations.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4 text-gray-400">Aucune collaboration récente</td>
+                  </tr>
+                ) : (
+                  collaborations.slice(0, 5).map((collab: any) => (
+                    <tr key={collab.id}>
+                      <td className="px-4 py-2 whitespace-nowrap">{collab.image?.examen?.patient?.prenom} {collab.image?.examen?.patient?.nom}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">{collab.image?.examen?.typeExamen?.nomType}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">{collab.invitee?.nom} {collab.invitee?.prenom}</td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <Badge variant={collab.status === 'ACCEPTED' ? 'default' : collab.status === 'PENDING' ? 'secondary' : 'destructive'}>
+                          {collab.status === 'ACCEPTED' ? 'Acceptée' : collab.status === 'PENDING' ? 'En cours' : 'Rejetée'}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <Link href="/radiologue/collaborations">
+                          <Button size="sm" variant="outline">Voir</Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 } 

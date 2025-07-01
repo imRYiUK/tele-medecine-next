@@ -125,7 +125,7 @@ export const radiologistApi = {
 
   // Collaborations
   getUserCollaborations: (): Promise<ImageCollaboration[]> => 
-    api.get('/examen-medical/images/user/collaborations').then((res: any) => res.data),
+    api.get('/examen-medical/images/user/active-collaborations').then((res: any) => res.data),
 
   // User-centric endpoints (all images)
   getReceivedInvitations: (): Promise<ImageCollaboration[]> => 
