@@ -16,6 +16,11 @@ export function middleware(request: NextRequest) {
   const user = request.cookies.get('user');
   const pathname = request.nextUrl.pathname;
 
+  // Allow access to home page without authentication
+  if (pathname === '/') {
+    return NextResponse.next();
+  }
+
   // Vérifier si c'est une page d'authentification
   const isAuthPage = pathname.startsWith('/login') || pathname.startsWith('/register');
 
@@ -23,8 +28,6 @@ export function middleware(request: NextRequest) {
   if ((!token || !user) && !isAuthPage) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
-
-
 
   // Si token et utilisateur existent et sur une page d'authentification
   if (token && user && isAuthPage) {
@@ -76,7 +79,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - images (public images)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|images).*)',
   ],
 }; 
