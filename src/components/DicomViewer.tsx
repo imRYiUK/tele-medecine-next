@@ -10,7 +10,8 @@ import {
   Move, 
   Ruler,
   Maximize,
-  Settings
+  Settings,
+  Minimize
 } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -22,6 +23,7 @@ interface DicomViewerProps {
 
 export default function DicomViewer({ imageUrl, instanceId, onError }: DicomViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [windowCenter, setWindowCenter] = useState(128);
@@ -31,6 +33,71 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
   const [useSimpleMode, setUseSimpleMode] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [panOffset, setPanOffset] = useState({ x: 0, y: 0 });
+  const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
+
+  // Fullscreen functionality
+  const toggleFullscreen = () => {
+    if (!isFullscreen) {
+      if (containerRef.current?.requestFullscreen) {
+        containerRef.current.requestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
+  // Handle fullscreen change events
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    };
+  }, []);
+
+  // Mouse drag functionality
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (zoom > 1) {
+      setIsPanning(true);
+      setLastMousePos({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (isPanning && zoom > 1) {
+      const deltaX = e.clientX - lastMousePos.x;
+      const deltaY = e.clientY - lastMousePos.y;
+      
+      setPanOffset(prev => ({
+        x: prev.x + deltaX,
+        y: prev.y + deltaY
+      }));
+      
+      setLastMousePos({ x: e.clientX, y: e.clientY });
+    }
+  };
+
+  const handleMouseUp = () => {
+    setIsPanning(false);
+  };
+
+  const handleMouseLeave = () => {
+    setIsPanning(false);
+  };
+
+  // Reset pan when zoom changes
+  useEffect(() => {
+    if (zoom <= 1) {
+      setPanOffset({ x: 0, y: 0 });
+    }
+  }, [zoom]);
 
   useEffect(() => {
     let localImageUrl: string | null = null;
@@ -178,6 +245,7 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
     setZoom(1);
     setWindowCenter(128);
     setWindowWidth(256);
+    setPanOffset({ x: 0, y: 0 });
   };
 
   if (error && !useSimpleMode) {
@@ -239,10 +307,22 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
     );
   }
 
+  const containerClasses = isFullscreen 
+    ? "fixed inset-0 z-50 bg-white flex flex-col"
+    : "flex flex-col h-full space-y-4";
+
+  const toolbarClasses = isFullscreen
+    ? "flex items-center justify-between p-4 bg-gray-50 border-b flex-shrink-0"
+    : "flex items-center justify-between p-4 bg-gray-50 rounded-lg flex-shrink-0";
+
+  const canvasContainerClasses = isFullscreen
+    ? "flex-1 relative bg-gray-100 overflow-hidden"
+    : "flex-1 relative bg-gray-100 rounded-lg overflow-hidden min-h-0";
+
   return (
-    <div className="flex flex-col h-full space-y-4">
+    <div ref={containerRef} className={containerClasses}>
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg flex-shrink-0">
+      <div className={toolbarClasses}>
         <div className="flex items-center space-x-2">
           <Button
             variant="outline"
@@ -295,11 +375,25 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
             />
             <span className="text-sm text-gray-600 w-8">{windowWidth}</span>
           </div>
+
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={toggleFullscreen}
+          >
+            {isFullscreen ? <Minimize className="h-4 w-4" /> : <Maximize className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
 
       {/* Image Canvas */}
-      <div className="flex-1 relative bg-gray-100 rounded-lg overflow-hidden min-h-0">
+      <div 
+        className={canvasContainerClasses}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
+      >
         {isLoading && (
           <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-75 z-10">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -310,19 +404,22 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
           ref={canvasRef}
           className="w-full h-full object-contain"
           style={{
-            transform: `scale(${zoom})`,
+            transform: `scale(${zoom}) translate(${panOffset.x / zoom}px, ${panOffset.y / zoom}px)`,
             transformOrigin: 'center',
-            cursor: isPanning ? 'grabbing' : 'grab'
+            cursor: isPanning ? 'grabbing' : (zoom > 1 ? 'grab' : 'default')
           }}
         />
       </div>
 
       {/* Image Info */}
-      <div className="text-sm text-gray-600 flex-shrink-0">
+      <div className="text-sm text-gray-600 flex-shrink-0 p-4">
         <p>Instance ID: {instanceId}</p>
         <p>Zoom: {zoom.toFixed(2)}x</p>
         <p>Window: {windowCenter} / {windowWidth}</p>
         <p>Mode: Advanced</p>
+        {zoom > 1 && (
+          <p className="text-blue-600">💡 Drag to pan when zoomed in</p>
+        )}
       </div>
     </div>
   );
