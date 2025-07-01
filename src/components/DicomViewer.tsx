@@ -340,13 +340,6 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
           >
             <ZoomOut className="h-4 w-4" />
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleReset}
-          >
-            <Maximize className="h-4 w-4" />
-          </Button>
         </div>
 
         <div className="flex items-center space-x-4">
