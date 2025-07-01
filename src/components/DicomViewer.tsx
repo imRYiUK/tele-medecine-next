@@ -30,8 +30,11 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
   const [isPanning, setIsPanning] = useState(false);
   const [useSimpleMode, setUseSimpleMode] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [originalImage, setOriginalImage] = useState<HTMLImageElement | null>(null);
 
   useEffect(() => {
+    let localImageUrl: string | null = null;
+    
     const loadDicomImage = async () => {
       if (!canvasRef.current) return;
 
@@ -52,7 +55,7 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
         
         // Create an image from the array buffer
         const blob = new Blob([arrayBuffer], { type: 'image/jpeg' });
-        const localImageUrl = URL.createObjectURL(blob);
+        localImageUrl = URL.createObjectURL(blob);
         
         const img = new Image();
         img.onload = () => {
@@ -67,7 +70,10 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
           canvas.width = img.width;
           canvas.height = img.height;
 
-          // Apply window/level adjustment
+          // Store the original image for window/level adjustments
+          setOriginalImage(img);
+          
+          // Apply initial window/level adjustment
           applyWindowLevel(ctx, img, windowCenter, windowWidth);
           
           setIsLoading(false);
@@ -94,7 +100,31 @@ export default function DicomViewer({ imageUrl, instanceId, onError }: DicomView
     } else {
       setIsLoading(false);
     }
-  }, [imageUrl, windowCenter, windowWidth, useSimpleMode]);
+
+    // Cleanup function to revoke object URL
+    return () => {
+      if (localImageUrl) {
+        URL.revokeObjectURL(localImageUrl);
+      }
+    };
+  }, [imageUrl, useSimpleMode]);
+
+  // Separate useEffect for window/level adjustments
+  useEffect(() => {
+    if (originalImage && canvasRef.current && imageLoaded) {
+      const canvas = canvasRef.current;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        applyWindowLevel(ctx, originalImage, windowCenter, windowWidth);
+      }
+    }
+  }, [windowCenter, windowWidth, originalImage, imageLoaded]);
+
+  // Cleanup effect to reset image state when imageUrl changes
+  useEffect(() => {
+    setOriginalImage(null);
+    setImageLoaded(false);
+  }, [imageUrl]);
 
   const applyWindowLevel = (
     ctx: CanvasRenderingContext2D, 
