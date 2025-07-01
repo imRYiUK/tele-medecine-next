@@ -180,7 +180,15 @@ export default function RadiologueExams() {
   };
 
   const calculateAge = (dateNaissance: string) => {
+    if (!dateNaissance || dateNaissance.trim() === '') {
+      return 'N/A';
+    }
+    
     const birthDate = new Date(dateNaissance);
+    if (isNaN(birthDate.getTime())) {
+      return 'N/A';
+    }
+    
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
@@ -296,7 +304,7 @@ export default function RadiologueExams() {
                         <div className="flex items-center space-x-2">
                           <User className="h-4 w-4 text-gray-400" />
                           <span className="text-sm text-gray-600">
-                            {exam.patient?.prenom || 'Prénom inconnu'} {exam.patient?.nom || 'Nom inconnu'} ({calculateAge(exam.patient?.dateNaissance || '')} ans)
+                            {exam.patient?.prenom || 'Prénom inconnu'} {exam.patient?.nom || 'Nom inconnu'} ({calculateAge(exam.patient?.dateNaissance || '')}{calculateAge(exam.patient?.dateNaissance || '') !== 'N/A' ? ' ans' : ''})
                           </span>
                         </div>
                         
